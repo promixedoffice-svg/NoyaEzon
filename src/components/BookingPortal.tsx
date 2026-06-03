@@ -17,7 +17,7 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
-  const [info, setInfo] = useState({ name: '', phone: '', email: '' })
+  const [info, setInfo] = useState({ name: '', phone: '', email: '', notes: '' })
   const [loading, setLoading] = useState(false)
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
@@ -59,6 +59,7 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
         guestName: info.name,
         guestPhone: info.phone,
         guestEmail: info.email || null,
+        notes: info.notes || null,
         startAt: startAt.toISOString(),
         endAt: endAt.toISOString(),
         price: selectedTreatment.defaultPrice,
@@ -295,16 +296,28 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
                 <input type="email" value={info.email} onChange={e => setInfo(p => ({ ...p, email: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="email@example.com" dir="ltr" />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-brand-800 mb-1.5">הערה למטפלת (אופציונלי)</label>
+                <textarea value={info.notes} onChange={e => setInfo(p => ({ ...p, notes: e.target.value }))} rows={2}
+                  className="w-full px-4 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition resize-none"
+                  placeholder="בקשות מיוחדות, הערות לטיפול..." />
+              </div>
             </div>
-            {error && <div className="mt-4 bg-red-50 text-red-700 text-sm rounded-xl px-4 py-3 border border-red-100">{error}</div>}
-            <div className="flex gap-3 mt-5">
+
+            {/* Disclaimer */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2 text-xs text-amber-800">
+              <span className="text-base leading-none mt-0.5">⚠️</span>
+              <p>בקשת התור <strong>אינה בתוקף</strong> עד לאישור המטפלת. תקבלי הודעה לאחר האישור.</p>
+            </div>
+
+            {error && <div className="bg-red-50 text-red-700 text-sm rounded-xl px-4 py-3 border border-red-100">{error}</div>}
+            <div className="flex gap-3">
               <button onClick={handleSubmit} disabled={loading || !info.name || !info.phone}
                 className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold rounded-xl transition">
                 {loading ? 'שולחת...' : 'שליחת בקשת תור'}
               </button>
               <button onClick={() => setStep('time')} className="px-5 py-3 border border-brand-200 text-brand-700 hover:bg-brand-50 font-medium rounded-xl transition">חזרה</button>
             </div>
-            <p className="text-center text-xs text-muted mt-4">התור ממתין לאישור המעצבת · תקבלי הודעה באישור</p>
           </div>
         )}
       </div>

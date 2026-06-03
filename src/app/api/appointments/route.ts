@@ -23,11 +23,41 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  // Allow unauthenticated for public booking portal
   const body = await req.json()
+
+  let clientId = body.clientId || null
+
+  // Auto-create or link client when booking via portal
+  if (!clientId && (body.guestPhone || body.guestEmail)) {
+    // Try to find existing client by phone or email
+    const existing = await prisma.client.findFirst({
+      where: {
+        OR: [
+          body.guestPhone ? { phone: body.guestPhone } : {},
+          body.guestEmail ? { email: body.guestEmail } : {},
+        ].filter(o => Object.keys(o).length > 0),
+      },
+    })
+
+    if (existing) {
+      clientId = existing.id
+    } else if (body.guestName) {
+      // Create new client card automatically
+      const newClient = await prisma.client.create({
+        data: {
+          fullName: body.guestName,
+          phone: body.guestPhone || null,
+          email: body.guestEmail || null,
+          status: 'new',
+        },
+      })
+      clientId = newClient.id
+    }
+  }
+
   const appointment = await prisma.appointment.create({
     data: {
-      clientId: body.clientId || null,
+      clientId,
       treatmentId: body.treatmentId || null,
       guestName: body.guestName || null,
       guestPhone: body.guestPhone || null,

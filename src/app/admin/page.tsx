@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
-import { formatCurrency, formatDate, formatTime, appointmentStatusLabel, appointmentStatusColor } from '@/lib/utils'
+import { formatCurrency, formatDate, formatTime, formatDateTime, appointmentStatusColor, appointmentStatusLabel } from '@/lib/utils'
 import Link from 'next/link'
-import { Users, Calendar, AlertCircle, TrendingUp, Clock } from 'lucide-react'
+import { Users, Calendar, AlertCircle, TrendingUp } from 'lucide-react'
+import { PendingApprovals } from '@/components/admin/PendingApprovals'
 
 export default async function DashboardPage() {
   const today = new Date()
@@ -11,12 +12,8 @@ export default async function DashboardPage() {
   const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59)
 
   const [
-    totalClients,
-    todayAppointments,
-    pendingCount,
-    openDebts,
-    monthPayments,
-    upcomingAppointments,
+    totalClients, todayAppointments, pendingAppointments,
+    openDebts, monthPayments, upcomingAppointments,
   ] = await Promise.all([
     prisma.client.count(),
     prisma.appointment.findMany({
@@ -24,20 +21,18 @@ export default async function DashboardPage() {
       include: { client: { select: { fullName: true } }, treatment: { select: { name: true, color: true } } },
       orderBy: { startAt: 'asc' },
     }),
-    prisma.appointment.count({ where: { status: 'pending' } }),
-    prisma.debt.findMany({
-      where: { status: { in: ['open', 'partial'] } },
-      select: { originalAmount: true, paidAmount: true },
-    }),
-    prisma.payment.findMany({
-      where: { paidAt: { gte: monthStart, lte: monthEnd } },
-      select: { amount: true },
-    }),
     prisma.appointment.findMany({
-      where: { startAt: { gt: today }, status: { in: ['pending', 'confirmed'] } },
+      where: { status: 'pending' },
+      include: { treatment: { select: { name: true, color: true } } },
+      orderBy: { startAt: 'asc' },
+    }),
+    prisma.debt.findMany({ where: { status: { in: ['open', 'partial'] } }, select: { originalAmount: true, paidAmount: true } }),
+    prisma.payment.findMany({ where: { paidAt: { gte: monthStart, lte: monthEnd } }, select: { amount: true } }),
+    prisma.appointment.findMany({
+      where: { startAt: { gt: today }, status: 'confirmed' },
       include: { client: { select: { fullName: true } }, treatment: { select: { name: true, color: true } } },
       orderBy: { startAt: 'asc' },
-      take: 5,
+      take: 4,
     }),
   ])
 
@@ -54,56 +49,56 @@ export default async function DashboardPage() {
   const hebrewDate = today.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-900">שלום 👋</h1>
-          <p className="text-muted text-sm mt-0.5">{hebrewDate}</p>
-        </div>
-        {pendingCount > 0 && (
-          <Link href="/admin/calendar" className="bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium px-4 py-2 rounded-xl hover:bg-amber-100 transition flex items-center gap-2">
-            <Clock size={16} />
-            {pendingCount} בקשות ממתינות
-          </Link>
-        )}
+    <div className="space-y-5">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-brand-900">שלום 👋</h1>
+        <p className="text-muted text-sm mt-0.5">{hebrewDate}</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Pending approvals — prominent */}
+      {pendingAppointments.length > 0 && (
+        <PendingApprovals appointments={pendingAppointments} />
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map(stat => (
           <Link key={stat.label} href={stat.href} className="group">
-            <div className="bg-white rounded-2xl p-5 border border-brand-100 shadow-sm hover:shadow-md transition-all hover:border-brand-200 group-hover:-translate-y-0.5">
-              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${stat.color} mb-3`}>
-                <stat.icon size={20} />
+            <div className="bg-white rounded-2xl p-4 border border-brand-100 shadow-sm hover:shadow-md transition-all hover:border-brand-200 group-hover:-translate-y-0.5">
+              <div className={`inline-flex items-center justify-center w-9 h-9 rounded-xl ${stat.color} mb-2.5`}>
+                <stat.icon size={18} />
               </div>
               <p className="text-2xl font-bold text-brand-900">{stat.value}</p>
-              <p className="text-sm text-muted mt-0.5">{stat.label}</p>
+              <p className="text-xs text-muted mt-0.5">{stat.label}</p>
             </div>
           </Link>
         ))}
       </div>
 
+      {/* Today's appointments */}
       <div className="bg-white rounded-2xl border border-brand-100 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-brand-50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-brand-50">
           <h2 className="font-semibold text-brand-900">תורים היום</h2>
-          <Link href="/admin/calendar" className="text-sm text-brand-500 hover:text-brand-700 transition">לכל היומן ←</Link>
+          <Link href="/admin/calendar" className="text-sm text-brand-500 hover:text-brand-700 transition">יומן ←</Link>
         </div>
         {todayAppointments.length === 0 ? (
-          <div className="px-6 py-10 text-center text-muted">
-            <Calendar className="mx-auto mb-2 opacity-30" size={32} />
-            <p>אין תורים היום</p>
+          <div className="px-6 py-8 text-center text-muted">
+            <Calendar className="mx-auto mb-2 opacity-30" size={28} />
+            <p className="text-sm">אין תורים היום</p>
           </div>
         ) : (
           <ul className="divide-y divide-brand-50">
             {todayAppointments.map(appt => (
-              <li key={appt.id} className="flex items-center gap-4 px-6 py-4 hover:bg-brand-50/50 transition">
-                <div className="w-1.5 h-10 rounded-full shrink-0" style={{ backgroundColor: appt.treatment?.color ?? '#d4605c' }} />
+              <li key={appt.id} className="flex items-center gap-3 px-5 py-3.5">
+                <div className="w-1 h-9 rounded-full shrink-0" style={{ backgroundColor: appt.treatment?.color ?? '#d4605c' }} />
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-brand-900 text-sm truncate">{appt.client?.fullName ?? appt.guestName ?? 'לקוחה'}</p>
-                  <p className="text-xs text-muted mt-0.5">{appt.treatment?.name ?? 'טיפול'}</p>
+                  <p className="text-xs text-muted">{appt.treatment?.name}</p>
                 </div>
                 <div className="text-left shrink-0">
-                  <p className="text-sm font-medium text-brand-800">{formatTime(appt.startAt)}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${appointmentStatusColor(appt.status)}`}>
+                  <p className="text-sm font-semibold text-brand-700">{formatTime(appt.startAt)}</p>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${appointmentStatusColor(appt.status)}`}>
                     {appointmentStatusLabel(appt.status)}
                   </span>
                 </div>
@@ -113,26 +108,24 @@ export default async function DashboardPage() {
         )}
       </div>
 
+      {/* Upcoming confirmed */}
       {upcomingAppointments.length > 0 && (
         <div className="bg-white rounded-2xl border border-brand-100 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-brand-50">
-            <h2 className="font-semibold text-brand-900">תורים קרובים</h2>
+          <div className="px-5 py-4 border-b border-brand-50">
+            <h2 className="font-semibold text-brand-900">תורים קרובים ✅</h2>
           </div>
           <ul className="divide-y divide-brand-50">
             {upcomingAppointments.map(appt => (
-              <li key={appt.id} className="flex items-center gap-4 px-6 py-4 hover:bg-brand-50/50 transition">
-                <div className="shrink-0 text-center">
+              <li key={appt.id} className="flex items-center gap-3 px-5 py-3.5">
+                <div className="shrink-0 text-center w-12">
                   <p className="text-xs text-muted">{formatDate(appt.startAt)}</p>
-                  <p className="text-sm font-semibold text-brand-700">{formatTime(appt.startAt)}</p>
+                  <p className="text-sm font-bold text-brand-700">{formatTime(appt.startAt)}</p>
                 </div>
-                <div className="w-1.5 h-10 rounded-full shrink-0" style={{ backgroundColor: appt.treatment?.color ?? '#d4605c' }} />
+                <div className="w-1 h-9 rounded-full shrink-0" style={{ backgroundColor: appt.treatment?.color ?? '#d4605c' }} />
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-brand-900 text-sm truncate">{appt.client?.fullName ?? appt.guestName}</p>
                   <p className="text-xs text-muted">{appt.treatment?.name}</p>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${appointmentStatusColor(appt.status)}`}>
-                  {appointmentStatusLabel(appt.status)}
-                </span>
               </li>
             ))}
           </ul>
