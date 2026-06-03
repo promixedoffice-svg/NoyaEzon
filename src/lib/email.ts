@@ -2,7 +2,9 @@ import { Resend } from 'resend'
 import { format } from 'date-fns'
 import { he } from 'date-fns/locale'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY ?? 're_placeholder')
+}
 const FROM = process.env.RESEND_FROM_EMAIL ?? 'noreply@noyagayaezon.co.il'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
@@ -21,7 +23,7 @@ export async function sendAppointmentConfirmed({
 }) {
   const dateStr = format(new Date(startAt), "EEEE, d MMMM yyyy 'בשעה' HH:mm", { locale: he })
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: `${businessName} <${FROM}>`,
     to,
     subject: `✅ תורך אושר — ${treatmentName}`,
@@ -54,7 +56,7 @@ export async function sendAppointmentRejected({
   treatmentName: string
   businessName: string
 }) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: `${businessName} <${FROM}>`,
     to,
     subject: `בקשת התור — ${treatmentName}`,
@@ -88,7 +90,7 @@ export async function sendReminder({
   const dateStr = format(new Date(startAt), "EEEE, d MMMM 'בשעה' HH:mm", { locale: he })
   const timeLabel = hoursAhead === 24 ? 'מחר' : `בעוד ${hoursAhead} שעות`
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: `${businessName} <${FROM}>`,
     to,
     subject: `תזכורת: תורך ${timeLabel} — ${treatmentName}`,
