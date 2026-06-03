@@ -12,6 +12,7 @@ import { AppointmentModal } from './AppointmentModal'
 
 type ViewMode = 'day' | 'week' | 'month'
 type Appointment = any
+type BlockedTime = { id: string; startAt: string; endAt: string; reason: string | null; isVacation: boolean }
 type Treatment = { id: string; name: string; defaultPrice: number; durationMinutes: number; bufferMinutes: number; color: string }
 type Client = { id: string; fullName: string; phone: string | null }
 
@@ -23,6 +24,7 @@ export function CalendarView({ treatments, clients }: Props) {
   const [view, setView] = useState<ViewMode>('week')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null)
   const [showNewModal, setShowNewModal] = useState(false)
@@ -35,9 +37,12 @@ export function CalendarView({ treatments, clients }: Props) {
     else if (view === 'week') { start = startOfWeek(currentDate, { weekStartsOn: 0 }); end = endOfWeek(currentDate, { weekStartsOn: 0 }) }
     else { start = startOfMonth(currentDate); end = endOfMonth(currentDate) }
 
-    const res = await fetch(`/api/appointments?start=${start.toISOString()}&end=${end.toISOString()}`)
-    const data = await res.json()
-    setAppointments(data)
+    const [apptRes, blockedRes] = await Promise.all([
+      fetch(`/api/appointments?start=${start.toISOString()}&end=${end.toISOString()}`),
+      fetch('/api/blocked-times'),
+    ])
+    setAppointments(await apptRes.json())
+    setBlockedTimes(await blockedRes.json())
     setLoading(false)
   }, [view, currentDate])
 
@@ -134,6 +139,25 @@ export function CalendarView({ treatments, clients }: Props) {
                       setNewApptTime(d); setShowNewModal(true)
                     }}>
                     {HOURS.map(h => (<div key={h} className="absolute w-full border-t border-brand-50" style={{ top: `${(h-7)*64}px` }} />))}
+                    {/* Blocked times */}
+                    {blockedTimes.filter(bt => {
+                      const btStart = new Date(bt.startAt); const btEnd = new Date(bt.endAt)
+                      return btStart.toDateString() === day.toDateString() || (btStart < day && btEnd > day)
+                    }).map(bt => {
+                      const btStart = new Date(bt.startAt)
+                      const btEnd = new Date(bt.endAt)
+                      const startMin = Math.max((btStart.getHours()-7)*60+btStart.getMinutes(), 0)
+                      const endMin = Math.min((btEnd.getHours()-7)*60+btEnd.getMinutes(), 14*60)
+                      const top = (startMin/60)*64; const height = Math.max(((endMin-startMin)/60)*64, 20)
+                      return (
+                        <div key={bt.id} className="absolute left-0 right-0 opacity-60 pointer-events-none"
+                          style={{ top: `${top}px`, height: `${height}px`, backgroundColor: bt.isVacation ? '#fed7aa' : '#fecaca', borderRight: `3px solid ${bt.isVacation ? '#f97316' : '#ef4444'}` }}>
+                          <p className="text-xs font-medium px-1 pt-0.5 truncate" style={{ color: bt.isVacation ? '#c2410c' : '#dc2626' }}>
+                            {bt.isVacation ? '🏖' : '🔒'} {bt.reason ?? 'חסום'}
+                          </p>
+                        </div>
+                      )
+                    })}
                     {dayAppts.map((appt: any) => {
                       const start = new Date(appt.startAt); const end = new Date(appt.endAt)
                       const topMin = (start.getHours()-7)*60+start.getMinutes()

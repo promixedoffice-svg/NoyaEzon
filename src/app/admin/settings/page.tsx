@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { SettingsForm } from '@/components/admin/SettingsForm'
 import { WorkHoursForm } from '@/components/admin/WorkHoursForm'
+import { BlockedTimesManager } from '@/components/admin/BlockedTimesManager'
 
 export default async function SettingsPage() {
   const [settings, workHours, availSettings] = await Promise.all([
@@ -14,6 +15,9 @@ export default async function SettingsPage() {
       <h1 className="text-2xl font-bold text-brand-900">הגדרות</h1>
       <SettingsForm settings={settings} />
       <WorkHoursForm workHours={workHours} availSettings={availSettings} />
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-6">
+        <BlockedTimesManager />
+      </div>
     </div>
   )
 }
