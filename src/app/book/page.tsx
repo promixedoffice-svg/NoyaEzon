@@ -1,0 +1,37 @@
+import { prisma } from '@/lib/prisma'
+import { BookingPortal } from '@/components/BookingPortal'
+
+export const dynamic = 'force-dynamic'
+
+export default async function BookPage() {
+  const [settings, treatments, workHours, availSettings] = await Promise.all([
+    prisma.businessSettings.findFirst(),
+    prisma.treatment.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
+    prisma.workHours.findMany({ orderBy: { dayOfWeek: 'asc' } }),
+    prisma.availabilitySettings.findFirst(),
+  ])
+
+  if (!treatments.length) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-brand-100 flex items-center justify-center p-4">
+        <div className="text-center">
+          <span className="text-5xl">💅</span>
+          <h1 className="text-2xl font-bold text-brand-900 mt-4">{settings?.businessName ?? 'הסטודיו'}</h1>
+          <p className="text-muted mt-2">מערכת ההזמנות אינה פעילה כרגע</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-brand-100" dir="rtl">
+      <BookingPortal
+        businessName={settings?.businessName ?? 'הסטודיו'}
+        treatments={treatments}
+        workHours={workHours}
+        minBookingHours={availSettings?.minBookingHours ?? 24}
+        slotIntervalMinutes={availSettings?.slotIntervalMinutes ?? 15}
+      />
+    </div>
+  )
+}

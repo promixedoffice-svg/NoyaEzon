@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ClientStatus {
+  new
+  active
+  inactive
+  debt
+}
+
+enum AppointmentStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+  no_show
+}
+
+enum PaymentStatus {
+  paid
+  partial
+  unpaid
+}
+
+enum PaymentMethod {
+  cash
+  bit
+  paybox
+  credit
+  transfer
+  check
+}
+
+enum DebtStatus {
+  open
+  partial
+  closed
+}
+
+enum ReceiptStatus {
+  active
+  cancelled
+}
+
+model BusinessSettings {
+  id                    String   @id @default(cuid())
+  businessName          String   @default("NoyaGayaEzon")
+  ownerName             String?
+  businessNumber        String?
+  phone                 String?
+  email                 String?
+  address               String?
+  logoUrl               String?
+  receiptStartingNumber Int      @default(1000)
+  receiptFooterText     String?  @default("תודה על הביקור!")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("business_settings")
+}
+
+model Treatment {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  defaultPrice    Float    @default(0)
+  durationMinutes Int      @default(60)
+  bufferMinutes   Int      @default(15)
+  isActive        Boolean  @default(true)
+  color           String   @default("#D4A0A0")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  appointments Appointment[]
+  visits       Visit[]
+
+  @@map("treatments")
+}
+
+model Client {
+  id            String       @id @default(cuid())
+  fullName      String
+  phone         String?
+  email         String?
+  city          String?
+  address       String?
+  notes         String?
+  preferences   String?
+  sensitivities String?
+  status        ClientStatus @default(new)
+  cardOpenedAt  DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  appointments Appointment[]
+  visits       Visit[]
+  payments     Payment[]
+  debts        Debt[]
+  receipts     Receipt[]
+
+  @@map("clients")
+}
+
+model WorkHours {
+  id        String  @id @default(cuid())
+  dayOfWeek Int
+  isWorking Boolean @default(true)
+  startTime String  @default("09:00")
+  endTime   String  @default("18:00")
+
+  @@unique([dayOfWeek])
+  @@map("work_hours")
+}
+
+model BlockedTime {
+  id         String   @id @default(cuid())
+  startAt    DateTime
+  endAt      DateTime
+  reason     String?
+  isVacation Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@map("blocked_times")
+}
+
+model AvailabilitySettings {
+  id                    String @id @default(cuid())
+  minBookingHours       Int    @default(24)
+  maxAppointmentsPerDay Int?
+  slotIntervalMinutes   Int    @default(15)
+
+  @@map("availability_settings")
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  clientId        String?
+  treatmentId     String?
+  guestName       String?
+  guestPhone      String?
+  guestEmail      String?
+  startAt         DateTime
+  endAt           DateTime
+  price           Float?
+  notes           String?
+  status          AppointmentStatus @default(pending)
+  cancelledReason String?
+  cancelledAt     DateTime?
+  confirmedAt     DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  client    Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  treatment Treatment? @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
+  visit     Visit?
+
+  @@map("appointments")
+}
+
+model Visit {
+  id            String        @id @default(cuid())
+  clientId      String
+  appointmentId String?       @unique
+  treatmentId   String?
+  treatmentName String
+  visitedAt     DateTime
+  price         Float         @default(0)
+  notes         String?
+  paymentStatus PaymentStatus @default(unpaid)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  treatment   Treatment?   @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
+  payments    Payment[]
+  debts       Debt[]
+  receipts    Receipt[]
+
+  @@map("visits")
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  clientId  String
+  visitId   String?
+  amount    Float
+  method    PaymentMethod @default(cash)
+  reference String?
+  notes     String?
+  paidAt    DateTime      @default(now())
+  createdAt DateTime      @default(now())
+
+  client  Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  visit   Visit?   @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  receipt Receipt?
+
+  @@map("payments")
+}
+
+model Debt {
+  id             String     @id @default(cuid())
+  clientId       String
+  visitId        String?
+  originalAmount Float
+  paidAmount     Float      @default(0)
+  status         DebtStatus @default(open)
+  notes          String?
+  reminderAt     DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  visit  Visit? @relation(fields: [visitId], references: [id], onDelete: SetNull)
+
+  @@map("debts")
+}
+
+model Receipt {
+  id                 String        @id @default(cuid())
+  clientId           String
+  visitId            String?
+  paymentId          String?       @unique
+  receiptNumber      Int           @unique
+  amount             Float
+  method             PaymentMethod
+  serviceDescription String
+  clientName         String
+  status             ReceiptStatus @default(active)
+  cancelledAt        DateTime?
+  cancellationReason String?
+  issuedAt           DateTime      @default(now())
+  createdAt          DateTime      @default(now())
+
+  client  Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  visit   Visit?   @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@map("receipts")
+}

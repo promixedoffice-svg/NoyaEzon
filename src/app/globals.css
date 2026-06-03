@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand colors - Premium Beauty Studio */
+  --brand-50: #fdf6f6;
+  --brand-100: #faeaea;
+  --brand-200: #f5d5d5;
+  --brand-300: #ecb0b0;
+  --brand-400: #e08080;
+  --brand-500: #d4605c;
+  --brand-600: #c0403c;
+  --brand-700: #9e3030;
+  --brand-800: #7d2727;
+  --brand-900: #5c1e1e;
+
+  --gold-400: #d4a96a;
+  --gold-500: #c49a55;
+  --gold-600: #a67c3a;
+
+  --background: #fdf6f6;
+  --surface: #ffffff;
+  --foreground: #2d1f1f;
+  --muted: #9b8585;
+  --border: #f0dede;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-gold-400: var(--gold-400);
+  --color-gold-500: var(--gold-500);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* RTL Global */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Segoe UI', 'Arial Hebrew', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  direction: rtl;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--brand-50); }
+::-webkit-scrollbar-thumb { background: var(--brand-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-400); }
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--brand-400);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions */
+a, button { transition: all 0.15s ease; }
+
+/* Calendar RTL overrides */
+.rdp {
+  direction: rtl;
 }
