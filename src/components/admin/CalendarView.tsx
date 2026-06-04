@@ -9,6 +9,7 @@ import { he } from 'date-fns/locale'
 import { ChevronRight, ChevronLeft, Plus, Check, X, Clock } from 'lucide-react'
 import { cn, formatTime, appointmentStatusLabel, appointmentStatusColor, formatCurrency } from '@/lib/utils'
 import { AppointmentModal } from './AppointmentModal'
+import { CompleteReceiptModal } from './CompleteReceiptModal'
 
 type ViewMode = 'day' | 'week' | 'month'
 type Appointment = any
@@ -29,6 +30,7 @@ export function CalendarView({ treatments, clients }: Props) {
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null)
   const [showNewModal, setShowNewModal] = useState(false)
   const [newApptTime, setNewApptTime] = useState<Date | null>(null)
+  const [completingAppt, setCompletingAppt] = useState<Appointment | null>(null)
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true)
@@ -198,7 +200,7 @@ export function CalendarView({ treatments, clients }: Props) {
                 <button onClick={() => updateStatus(selectedAppt, 'cancelled')} className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium px-4 py-2 rounded-xl transition"><X size={14} /> דחייה</button>
               </>}
               {selectedAppt.status === 'confirmed' && <>
-                <button onClick={() => updateStatus(selectedAppt, 'completed')} className="flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition"><Check size={14} /> סיום טיפול</button>
+                <button onClick={() => { setCompletingAppt(selectedAppt); setSelectedAppt(null) }} className="flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition"><Check size={14} /> סיום טיפול</button>
                 <button onClick={() => updateStatus(selectedAppt, 'no_show')} className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium px-4 py-2 rounded-xl transition">לא הגיעה</button>
                 <button onClick={() => updateStatus(selectedAppt, 'cancelled')} className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium px-4 py-2 rounded-xl transition"><X size={14} /> ביטול</button>
               </>}
@@ -208,6 +210,18 @@ export function CalendarView({ treatments, clients }: Props) {
       )}
 
       {showNewModal && <AppointmentModal treatments={treatments} clients={clients} defaultTime={newApptTime} onClose={() => { setShowNewModal(false); setNewApptTime(null) }} onSaved={() => { setShowNewModal(false); setNewApptTime(null); fetchAppointments() }} />}
+
+      {completingAppt && (
+        <CompleteReceiptModal
+          appointmentId={completingAppt.id}
+          clientId={completingAppt.clientId}
+          clientName={completingAppt.client?.fullName ?? completingAppt.guestName ?? 'לקוחה'}
+          treatmentName={completingAppt.treatment?.name ?? 'טיפול'}
+          price={completingAppt.price}
+          onComplete={() => { setCompletingAppt(null); fetchAppointments() }}
+          onClose={() => setCompletingAppt(null)}
+        />
+      )}
     </div>
   )
 }

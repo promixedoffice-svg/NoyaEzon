@@ -10,8 +10,11 @@ export default async function ClientsPage({
 }) {
   const { q, status } = await searchParams
 
+  const deletedCount = await prisma.client.count({ where: { deletedAt: { not: null } } })
+
   const clients = await prisma.client.findMany({
     where: {
+      deletedAt: null, // exclude deleted
       ...(q ? {
         OR: [
           { fullName: { contains: q, mode: 'insensitive' } },
@@ -62,9 +65,16 @@ export default async function ClientsPage({
           <h1 className="text-2xl font-bold text-brand-900">לקוחות</h1>
           <p className="text-muted text-sm mt-0.5">{clients.length} לקוחות</p>
         </div>
-        <Link href="/admin/clients/new" className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-xl transition shadow-sm text-sm">
-          <Plus size={16} /> לקוחה חדשה
-        </Link>
+        <div className="flex items-center gap-2">
+          {deletedCount > 0 && (
+            <Link href="/admin/clients/deleted" className="flex items-center gap-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-600 font-medium px-3 py-2.5 rounded-xl transition">
+              🗑 סל מחזור ({deletedCount})
+            </Link>
+          )}
+          <Link href="/admin/clients/new" className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-xl transition shadow-sm text-sm">
+            <Plus size={16} /> לקוחה חדשה
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-brand-100 p-4 shadow-sm">

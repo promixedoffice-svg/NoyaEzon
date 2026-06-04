@@ -1,8 +1,13 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { formatDate, formatDateTime, formatCurrency, clientStatusLabel, clientStatusColor, paymentMethodLabel, appointmentStatusLabel, appointmentStatusColor, paymentStatusLabel } from '@/lib/utils'
-import { Phone, Mail, MapPin, Edit, Plus, Calendar, CreditCard, FileText, ArrowRight } from 'lucide-react'
+import {
+  formatDate, formatDateTime, formatCurrency,
+  clientStatusLabel, clientStatusColor, paymentMethodLabel,
+  appointmentStatusLabel, appointmentStatusColor, paymentStatusLabel
+} from '@/lib/utils'
+import { Phone, Mail, MapPin, Edit, Plus, Calendar, CreditCard, FileText, ArrowRight, Printer } from 'lucide-react'
+import { ClientCardActions } from '@/components/admin/ClientCardActions'
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -33,113 +38,192 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         <ArrowRight size={14} /> חזרה ללקוחות
       </Link>
 
-      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-6">
+      {/* Deleted banner */}
+      {client.deletedAt && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-3 flex items-center gap-3">
+          <span className="text-lg">🗑</span>
+          <p className="text-sm text-red-700 font-medium">לקוחה זו נמצאת בסל המחזור מ-{formatDate(client.deletedAt)}</p>
+        </div>
+      )}
+
+      {/* Header card */}
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-2xl shrink-0">
+          <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-2xl shrink-0">
             {client.fullName.charAt(0)}
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-brand-900">{client.fullName}</h1>
-              <span className={`text-sm px-3 py-1 rounded-full font-medium ${clientStatusColor(client.status)}`}>{clientStatusLabel(client.status)}</span>
-              {totalDebt > 0 && <span className="text-sm px-3 py-1 rounded-full bg-red-100 text-red-700 font-medium">חוב: {formatCurrency(totalDebt)}</span>}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl font-bold text-brand-900">{client.fullName}</h1>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${clientStatusColor(client.status)}`}>
+                {clientStatusLabel(client.status)}
+              </span>
+              {totalDebt > 0 && (
+                <span className="text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-medium">
+                  חוב: {formatCurrency(totalDebt)}
+                </span>
+              )}
             </div>
-            <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted">
-              {client.phone && <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 hover:text-brand-600 transition"><Phone size={14} />{client.phone}</a>}
-              {client.email && <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 hover:text-brand-600 transition"><Mail size={14} />{client.email}</a>}
-              {client.city && <span className="flex items-center gap-1.5"><MapPin size={14} />{client.city}</span>}
+            <div className="flex flex-wrap gap-3 mt-2 text-sm text-muted">
+              {client.phone && <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 hover:text-brand-600 transition"><Phone size={13} />{client.phone}</a>}
+              {client.email && <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 hover:text-brand-600 transition"><Mail size={13} />{client.email}</a>}
+              {client.city && <span className="flex items-center gap-1.5"><MapPin size={13} />{client.city}</span>}
+            </div>
+
+            {/* Actions row */}
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              {!client.deletedAt && (
+                <Link href={`/admin/clients/${id}/edit`}
+                  className="flex items-center gap-1.5 text-sm bg-brand-50 hover:bg-brand-100 text-brand-700 font-medium px-3 py-2 rounded-xl transition">
+                  <Edit size={14} /> עריכה
+                </Link>
+              )}
+              <ClientCardActions
+                clientId={id}
+                clientName={client.fullName}
+                lastVisit={lastVisit ? { id: lastVisit.id, treatmentName: lastVisit.treatment?.name ?? lastVisit.treatmentName, visitedAt: lastVisit.visitedAt, price: lastVisit.price } : null}
+                isDeleted={!!client.deletedAt}
+              />
             </div>
           </div>
-          <Link href={`/admin/clients/${id}/edit`} className="flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-800 font-medium transition shrink-0">
-            <Edit size={15} /> עריכה
-          </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-brand-50">
-          <div><p className="text-xs text-muted">ביקורים</p><p className="font-bold text-brand-900 text-xl">{client.visits.length}</p></div>
-          <div><p className="text-xs text-muted">סך הכנסות</p><p className="font-bold text-brand-900 text-xl">{formatCurrency(totalRevenue)}</p></div>
+        {/* Quick stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-brand-50">
+          <div><p className="text-xs text-muted">ביקורים</p><p className="font-bold text-brand-900 text-lg">{client.visits.length}</p></div>
+          <div><p className="text-xs text-muted">סך הכנסות</p><p className="font-bold text-brand-900 text-lg">{formatCurrency(totalRevenue)}</p></div>
           <div><p className="text-xs text-muted">ביקור אחרון</p><p className="font-semibold text-brand-700 text-sm">{lastVisit ? formatDate(lastVisit.visitedAt) : '—'}</p></div>
           <div><p className="text-xs text-muted">תור הבא</p><p className="font-semibold text-brand-700 text-sm">{nextAppointment ? formatDateTime(nextAppointment.startAt) : '—'}</p></div>
         </div>
       </div>
 
+      {/* Notes / preferences */}
       {(client.notes || client.preferences || client.sensitivities) && (
         <div className="grid sm:grid-cols-3 gap-4">
-          {client.notes && <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4"><h3 className="text-xs font-semibold text-muted uppercase mb-2">הערות</h3><p className="text-sm text-brand-800 whitespace-pre-wrap">{client.notes}</p></div>}
-          {client.preferences && <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4"><h3 className="text-xs font-semibold text-muted uppercase mb-2">העדפות</h3><p className="text-sm text-brand-800 whitespace-pre-wrap">{client.preferences}</p></div>}
-          {client.sensitivities && <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 border-l-2 border-l-red-300"><h3 className="text-xs font-semibold text-red-500 uppercase mb-2">רגישויות</h3><p className="text-sm text-brand-800 whitespace-pre-wrap">{client.sensitivities}</p></div>}
+          {client.notes && <NoteCard title="הערות" text={client.notes} />}
+          {client.preferences && <NoteCard title="העדפות" text={client.preferences} />}
+          {client.sensitivities && <NoteCard title="רגישויות" text={client.sensitivities} highlight />}
         </div>
       )}
 
-      <Section title="ביקורים" icon={<Calendar size={16} />}>
+      {/* Visits */}
+      <Section title="ביקורים" icon={<Calendar size={15} />}>
         {client.visits.length === 0 ? <Empty text="אין ביקורים עדיין" /> : (
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-brand-50 text-xs text-muted"><th className="text-right pb-2 font-medium">תאריך</th><th className="text-right pb-2 font-medium">טיפול</th><th className="text-right pb-2 font-medium">מחיר</th><th className="text-right pb-2 font-medium">תשלום</th></tr></thead>
-            <tbody>
-              {client.visits.map(v => (
-                <tr key={v.id} className="border-b border-brand-50 hover:bg-brand-50/50 transition">
-                  <td className="py-3">{formatDate(v.visitedAt)}</td>
-                  <td className="py-3">{v.treatment?.name ?? v.treatmentName}</td>
-                  <td className="py-3 font-medium">{formatCurrency(v.price)}</td>
-                  <td className="py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${v.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : v.paymentStatus === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{paymentStatusLabel(v.paymentStatus)}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-brand-50 text-xs text-muted">
+                <th className="text-right pb-2 font-medium">תאריך</th>
+                <th className="text-right pb-2 font-medium">טיפול</th>
+                <th className="text-right pb-2 font-medium">מחיר</th>
+                <th className="text-right pb-2 font-medium">תשלום</th>
+              </tr></thead>
+              <tbody>
+                {client.visits.map(v => (
+                  <tr key={v.id} className="border-b border-brand-50 hover:bg-brand-50/50">
+                    <td className="py-2.5">{formatDate(v.visitedAt)}</td>
+                    <td className="py-2.5">{v.treatment?.name ?? v.treatmentName}</td>
+                    <td className="py-2.5 font-medium">{formatCurrency(v.price)}</td>
+                    <td className="py-2.5"><StatusBadge status={v.paymentStatus} type="payment" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Section>
 
-      <Section title="תורים" icon={<Calendar size={16} />}>
+      {/* Appointments */}
+      <Section title="תורים" icon={<Calendar size={15} />}>
         {client.appointments.length === 0 ? <Empty text="אין תורים" /> : (
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-brand-50 text-xs text-muted"><th className="text-right pb-2 font-medium">תאריך ושעה</th><th className="text-right pb-2 font-medium">טיפול</th><th className="text-right pb-2 font-medium">סטטוס</th></tr></thead>
-            <tbody>
-              {client.appointments.map(a => (
-                <tr key={a.id} className="border-b border-brand-50 hover:bg-brand-50/50 transition">
-                  <td className="py-3">{formatDateTime(a.startAt)}</td>
-                  <td className="py-3">{a.treatment?.name ?? '—'}</td>
-                  <td className="py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${appointmentStatusColor(a.status)}`}>{appointmentStatusLabel(a.status)}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-brand-50 text-xs text-muted">
+                <th className="text-right pb-2 font-medium">תאריך ושעה</th>
+                <th className="text-right pb-2 font-medium">טיפול</th>
+                <th className="text-right pb-2 font-medium">סטטוס</th>
+                <th className="text-right pb-2 font-medium">הערות</th>
+              </tr></thead>
+              <tbody>
+                {client.appointments.map(a => (
+                  <tr key={a.id} className="border-b border-brand-50 hover:bg-brand-50/50">
+                    <td className="py-2.5">{formatDateTime(a.startAt)}</td>
+                    <td className="py-2.5">{a.treatment?.name ?? '—'}</td>
+                    <td className="py-2.5"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${appointmentStatusColor(a.status)}`}>{appointmentStatusLabel(a.status)}</span></td>
+                    <td className="py-2.5 text-muted text-xs max-w-[120px] truncate">{a.notes ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Section>
 
-      <Section title="תשלומים" icon={<CreditCard size={16} />}>
+      {/* Payments */}
+      <Section title="תשלומים" icon={<CreditCard size={15} />}>
         {client.payments.length === 0 ? <Empty text="אין תשלומים" /> : (
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-brand-50 text-xs text-muted"><th className="text-right pb-2 font-medium">תאריך</th><th className="text-right pb-2 font-medium">סכום</th><th className="text-right pb-2 font-medium">אמצעי תשלום</th></tr></thead>
-            <tbody>
-              {client.payments.map(p => (
-                <tr key={p.id} className="border-b border-brand-50 hover:bg-brand-50/50 transition">
-                  <td className="py-3">{formatDate(p.paidAt)}</td>
-                  <td className="py-3 font-semibold text-green-700">{formatCurrency(p.amount)}</td>
-                  <td className="py-3">{paymentMethodLabel(p.method)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-brand-50 text-xs text-muted">
+                <th className="text-right pb-2 font-medium">תאריך</th>
+                <th className="text-right pb-2 font-medium">סכום</th>
+                <th className="text-right pb-2 font-medium">אמצעי תשלום</th>
+              </tr></thead>
+              <tbody>
+                {client.payments.map((p: any) => (
+                  <tr key={p.id} className="border-b border-brand-50 hover:bg-brand-50/50">
+                    <td className="py-2.5">{formatDate(p.paidAt)}</td>
+                    <td className="py-2.5 font-semibold text-green-700">{formatCurrency(p.amount)}</td>
+                    <td className="py-2.5">{paymentMethodLabel(p.method)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Section>
 
-      <Section title="קבלות" icon={<FileText size={16} />}>
+      {/* Receipts */}
+      <Section title="קבלות" icon={<FileText size={15} />}>
         {client.receipts.length === 0 ? <Empty text="אין קבלות" /> : (
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-brand-50 text-xs text-muted"><th className="text-right pb-2 font-medium">#</th><th className="text-right pb-2 font-medium">תאריך</th><th className="text-right pb-2 font-medium">סכום</th><th className="text-right pb-2 font-medium">שירות</th></tr></thead>
-            <tbody>
-              {client.receipts.map(r => (
-                <tr key={r.id} className="border-b border-brand-50 hover:bg-brand-50/50 transition">
-                  <td className="py-3">#{r.receiptNumber}</td>
-                  <td className="py-3">{formatDate(r.issuedAt)}</td>
-                  <td className="py-3 font-semibold">{formatCurrency(r.amount)}</td>
-                  <td className="py-3">{r.serviceDescription}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b border-brand-50 text-xs text-muted">
+                <th className="text-right pb-2 font-medium">#</th>
+                <th className="text-right pb-2 font-medium">תאריך</th>
+                <th className="text-right pb-2 font-medium">סכום</th>
+                <th className="text-right pb-2 font-medium">שירות</th>
+                <th className="text-right pb-2 font-medium">סטטוס</th>
+                <th></th>
+              </tr></thead>
+              <tbody>
+                {client.receipts.map(r => (
+                  <tr key={r.id} className={`border-b border-brand-50 hover:bg-brand-50/50 ${r.status === 'cancelled' ? 'opacity-50' : ''}`}>
+                    <td className="py-2.5 font-mono text-brand-600">#{r.receiptNumber}</td>
+                    <td className="py-2.5">{formatDate(r.issuedAt)}</td>
+                    <td className="py-2.5 font-semibold">{formatCurrency(r.amount)}</td>
+                    <td className="py-2.5 max-w-[120px] truncate">{r.serviceDescription}</td>
+                    <td className="py-2.5"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500 line-through'}`}>{r.status === 'active' ? 'פעילה' : 'בוטלה'}</span></td>
+                    <td className="py-2.5">
+                      <Link href={`/admin/receipts/${r.id}`} className="flex items-center gap-1 text-brand-500 hover:text-brand-700 text-xs font-medium transition">
+                        <Printer size={12} />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Section>
+    </div>
+  )
+}
+
+function NoteCard({ title, text, highlight }: { title: string; text: string; highlight?: boolean }) {
+  return (
+    <div className={`bg-white rounded-2xl border shadow-sm p-4 ${highlight ? 'border-l-2 border-l-red-400 border-brand-100' : 'border-brand-100'}`}>
+      <h3 className={`text-xs font-semibold uppercase mb-2 ${highlight ? 'text-red-500' : 'text-muted'}`}>{title}</h3>
+      <p className="text-sm text-brand-800 whitespace-pre-wrap">{text}</p>
     </div>
   )
 }
@@ -148,13 +232,26 @@ function Section({ title, icon, children }: { title: string; icon?: React.ReactN
   return (
     <div className="bg-white rounded-2xl border border-brand-100 shadow-sm overflow-hidden">
       <div className="flex items-center px-5 py-4 border-b border-brand-50">
-        <h2 className="font-semibold text-brand-900 flex items-center gap-2">{icon}{title}</h2>
+        <h2 className="font-semibold text-brand-900 flex items-center gap-2 text-sm">{icon}{title}</h2>
       </div>
-      <div className="p-5 overflow-x-auto">{children}</div>
+      <div className="p-5">{children}</div>
     </div>
   )
 }
 
 function Empty({ text }: { text: string }) {
-  return <p className="text-muted text-sm text-center py-4">{text}</p>
+  return <p className="text-muted text-sm text-center py-3">{text}</p>
+}
+
+function StatusBadge({ status, type }: { status: string; type: 'payment' | 'appt' }) {
+  const colors: Record<string, string> = {
+    paid: 'bg-green-100 text-green-700', partial: 'bg-amber-100 text-amber-700', unpaid: 'bg-red-100 text-red-700',
+    confirmed: 'bg-green-100 text-green-700', pending: 'bg-amber-100 text-amber-700', cancelled: 'bg-red-100 text-red-700',
+    completed: 'bg-blue-100 text-blue-700', no_show: 'bg-gray-100 text-gray-600',
+  }
+  const labels: Record<string, string> = {
+    paid: 'שולם', partial: 'חלקי', unpaid: 'לא שולם',
+    confirmed: 'מאושר', pending: 'ממתין', cancelled: 'בוטל', completed: 'הסתיים', no_show: 'לא הגיעה',
+  }
+  return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] ?? 'bg-gray-100 text-gray-600'}`}>{labels[status] ?? status}</span>
 }
