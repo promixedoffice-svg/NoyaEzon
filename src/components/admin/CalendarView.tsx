@@ -194,16 +194,24 @@ export function CalendarView({ treatments, clients }: Props) {
               {selectedAppt.price && <div className="flex justify-between"><span className="text-muted">מחיר</span><span className="font-medium">{formatCurrency(selectedAppt.price)}</span></div>}
               <div className="flex justify-between"><span className="text-muted">סטטוס</span><span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', appointmentStatusColor(selectedAppt.status))}>{appointmentStatusLabel(selectedAppt.status)}</span></div>
             </div>
+            {/* Future appointment warning */}
+            {new Date(selectedAppt.startAt) > new Date() && selectedAppt.status === 'confirmed' && (
+              <div className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 text-xs text-blue-700 mb-3">
+                📅 תור עתידי — לא ניתן לסמן כהסתיים עד מועד התור
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               {selectedAppt.status === 'pending' && <>
                 <button onClick={() => updateStatus(selectedAppt, 'confirmed')} className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition"><Check size={14} /> אישור</button>
                 <button onClick={() => updateStatus(selectedAppt, 'cancelled')} className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium px-4 py-2 rounded-xl transition"><X size={14} /> דחייה</button>
               </>}
-              {selectedAppt.status === 'confirmed' && <>
+              {selectedAppt.status === 'confirmed' && new Date(selectedAppt.startAt) <= new Date() && <>
                 <button onClick={() => { setCompletingAppt(selectedAppt); setSelectedAppt(null) }} className="flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition"><Check size={14} /> סיום טיפול</button>
                 <button onClick={() => updateStatus(selectedAppt, 'no_show')} className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium px-4 py-2 rounded-xl transition">לא הגיעה</button>
-                <button onClick={() => updateStatus(selectedAppt, 'cancelled')} className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium px-4 py-2 rounded-xl transition"><X size={14} /> ביטול</button>
               </>}
+              {(selectedAppt.status === 'confirmed' || selectedAppt.status === 'pending') && (
+                <button onClick={() => updateStatus(selectedAppt, 'cancelled')} className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium px-4 py-2 rounded-xl transition"><X size={14} /> ביטול</button>
+              )}
             </div>
           </div>
         </div>
@@ -217,6 +225,7 @@ export function CalendarView({ treatments, clients }: Props) {
           clientId={completingAppt.clientId}
           clientName={completingAppt.client?.fullName ?? completingAppt.guestName ?? 'לקוחה'}
           clientPhone={completingAppt.client?.phone ?? completingAppt.guestPhone}
+          guestEmail={completingAppt.guestEmail}
           treatmentName={completingAppt.treatment?.name ?? 'טיפול'}
           price={completingAppt.price}
           onComplete={() => { setCompletingAppt(null); fetchAppointments() }}
