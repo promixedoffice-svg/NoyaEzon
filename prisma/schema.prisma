@@ -48,6 +48,19 @@ enum ReceiptStatus {
   cancelled
 }
 
+enum ExpenseCategory {
+  materials
+  equipment
+  furniture
+  marketing
+  training
+  utilities
+  rent
+  taxes
+  hygiene
+  other
+}
+
 model BusinessSettings {
   id                    String   @id @default(cuid())
   businessName          String   @default("NoyaGayaEzon")
@@ -246,4 +259,17 @@ model Receipt {
   payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
   @@map("receipts")
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  category    ExpenseCategory
+  description String
+  amount      Float
+  date        DateTime        @default(now())
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("expenses")
 }

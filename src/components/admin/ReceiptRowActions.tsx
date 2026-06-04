@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2, RotateCcw, X, MessageCircle, Mail } from 'lucide-react'
+import { Trash2, RotateCcw, X, MessageCircle } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { useBusinessSettings, buildWhatsAppMessage, getFirstName } from '@/lib/useBusinessSettings'
 
 interface Props {
   receiptId: string
@@ -22,6 +23,7 @@ export function ReceiptRowActions({
   clientPhone, clientEmail, amount, serviceDescription, clientName
 }: Props) {
   const router = useRouter()
+  const { businessName, ownerName } = useBusinessSettings()
   const [loading, setLoading] = useState(false)
   const [showCancel, setShowCancel] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -48,7 +50,15 @@ export function ReceiptRowActions({
   function getWhatsAppLink() {
     if (!clientPhone) return null
     const clean = clientPhone.replace(/\D/g, '').replace(/^0/, '972')
-    const msg = encodeURIComponent(`שלום ${clientName}! 💅\nקבלה מספר #${receiptNumber}\nשירות: ${serviceDescription}\nסכום: ${formatCurrency(amount)}\nתודה!`)
+    const msg = encodeURIComponent(buildWhatsAppMessage({
+      clientFirstName: getFirstName(clientName),
+      type: 'receipt',
+      treatmentName: serviceDescription,
+      amount: formatCurrency(amount),
+      receiptNumber,
+      businessName,
+      ownerName,
+    }))
     return `https://wa.me/${clean}?text=${msg}`
   }
 

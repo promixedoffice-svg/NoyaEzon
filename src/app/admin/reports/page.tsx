@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { formatCurrency, paymentMethodLabel } from '@/lib/utils'
-import { BarChart2, TrendingUp, Users, Scissors } from 'lucide-react'
+import { BarChart2, TrendingUp, TrendingDown, Users, Scissors } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function ReportsPage() {
   const today = new Date()
@@ -15,6 +16,7 @@ export default async function ReportsPage() {
     monthReceipts, yearReceipts,
     monthVisitsCount, cancellationsCount, noShowsCount,
     clientStats, treatmentStats,
+    monthExpenses, yearExpenses,
   ] = await Promise.all([
     prisma.payment.aggregate({ where: { paidAt: { gte: todayStart, lte: todayEnd } }, _sum: { amount: true } }),
     prisma.payment.findMany({ where: { paidAt: { gte: monthStart, lte: monthEnd } }, select: { amount: true, method: true } }),
@@ -26,6 +28,8 @@ export default async function ReportsPage() {
     prisma.appointment.count({ where: { status: 'no_show', createdAt: { gte: monthStart } } }),
     prisma.payment.groupBy({ by: ['clientId'], where: { paidAt: { gte: yearStart } }, _sum: { amount: true }, _count: true, orderBy: { _sum: { amount: 'desc' } }, take: 5 }),
     prisma.visit.groupBy({ by: ['treatmentName'], where: { visitedAt: { gte: monthStart, lte: monthEnd } }, _count: true, _sum: { price: true }, orderBy: { _sum: { price: 'desc' } } }),
+    prisma.expense.aggregate({ where: { date: { gte: monthStart, lte: monthEnd } }, _sum: { amount: true } }),
+    prisma.expense.aggregate({ where: { date: { gte: yearStart } }, _sum: { amount: true } }),
   ])
 
   const todayRevenue = todayPayments._sum.amount ?? 0
@@ -42,6 +46,9 @@ export default async function ReportsPage() {
   const nameMap = Object.fromEntries(clientNames.map(c => [c.id, c.fullName]))
 
   const monthName = today.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' })
+  const monthExpenseTotal = monthExpenses._sum.amount ?? 0
+  const yearExpenseTotal = yearExpenses._sum.amount ?? 0
+  const monthProfit = monthRevenue - monthExpenseTotal
 
   return (
     <div className="space-y-5">
@@ -91,6 +98,32 @@ export default async function ReportsPage() {
           <div className="bg-purple-50 rounded-xl p-4 text-center">
             <p className="text-xl font-bold text-purple-700">{formatCurrency(yearReceipts._sum.amount ?? 0)}</p>
             <p className="text-xs text-muted mt-1">קבלות השנה</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Expenses + Profit */}
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-brand-900 flex items-center gap-2">
+            <TrendingDown size={16} className="text-red-400" /> הוצאות ורווח — {monthName}
+          </h2>
+          <Link href="/admin/expenses" className="text-xs text-brand-500 hover:text-brand-700 transition">לכל ההוצאות ←</Link>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-red-50 rounded-xl p-4 text-center">
+            <p className="text-xl font-bold text-red-600">{formatCurrency(monthExpenseTotal)}</p>
+            <p className="text-xs text-muted mt-1">הוצאות החודש</p>
+          </div>
+          <div className="bg-orange-50 rounded-xl p-4 text-center">
+            <p className="text-xl font-bold text-orange-600">{formatCurrency(yearExpenseTotal)}</p>
+            <p className="text-xs text-muted mt-1">הוצאות השנה</p>
+          </div>
+          <div className={`rounded-xl p-4 text-center col-span-2 ${monthProfit >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+            <p className={`text-2xl font-bold ${monthProfit >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+              {monthProfit >= 0 ? '+' : ''}{formatCurrency(monthProfit)}
+            </p>
+            <p className="text-xs text-muted mt-1">רווח נקי החודש (הכנסות - הוצאות)</p>
           </div>
         </div>
       </div>

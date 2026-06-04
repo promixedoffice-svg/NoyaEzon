@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Check, X, FileText, MessageCircle, UserPlus } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { useBusinessSettings, buildWhatsAppMessage, getFirstName } from '@/lib/useBusinessSettings'
 
 interface Props {
   appointmentId: string
@@ -21,6 +22,7 @@ type Step = 'confirm' | 'create-client' | 'receipt' | 'done'
 export function CompleteReceiptModal({
   appointmentId, clientId: initialClientId, clientName, clientPhone, guestEmail, treatmentName, price, onComplete, onClose
 }: Props) {
+  const { businessName, ownerName } = useBusinessSettings()
   const [step, setStep] = useState<Step>('confirm')
   const [resolvedClientId, setResolvedClientId] = useState<string | null>(initialClientId)
   const [resolvedClientPhone, setResolvedClientPhone] = useState(clientPhone)
@@ -257,7 +259,15 @@ export function CompleteReceiptModal({
             {resolvedClientPhone && (
               <a href={(() => {
                 const clean = resolvedClientPhone.replace(/\D/g, '').replace(/^0/, '972')
-                const msg = encodeURIComponent(`שלום ${clientName}! 💅\nקבלה מספר #${issuedReceiptNumber}\nשירות: ${receiptForm.serviceDescription}\nסכום: ${formatCurrency(parseFloat(receiptForm.amount))}\nתודה על הביקור!`)
+                const msg = encodeURIComponent(buildWhatsAppMessage({
+                  clientFirstName: getFirstName(clientName),
+                  type: 'receipt',
+                  treatmentName: receiptForm.serviceDescription,
+                  amount: formatCurrency(parseFloat(receiptForm.amount)),
+                  receiptNumber: issuedReceiptNumber ?? undefined,
+                  businessName,
+                  ownerName,
+                }))
                 return `https://wa.me/${clean}?text=${msg}`
               })()} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl transition text-sm">

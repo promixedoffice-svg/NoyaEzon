@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { he } from 'date-fns/locale'
+import { useBusinessSettings, buildWhatsAppMessage, getFirstName } from '@/lib/useBusinessSettings'
 import { X, Search, UserPlus, Check, MessageCircle, Mail } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -20,6 +21,7 @@ interface Props {
 type ClientMode = 'existing' | 'new'
 
 export function AppointmentModal({ treatments, clients, defaultTime, onClose, onSaved }: Props) {
+  const { businessName, ownerName } = useBusinessSettings()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState<{ id: string; clientName: string; clientPhone: string | null; clientEmail: string; startAt: string; treatmentName: string } | null>(null)
@@ -113,9 +115,17 @@ export function AppointmentModal({ treatments, clients, defaultTime, onClose, on
 
   function getWhatsAppLink(phone: string) {
     const clean = phone.replace(/\D/g, '').replace(/^0/, '972')
-    const date = saved ? format(new Date(saved.startAt), 'EEEE d MMMM', { locale: he }) : ''
+    const date = saved ? format(new Date(saved.startAt), 'EEEE, d MMMM', { locale: he }) : ''
     const time = saved ? format(new Date(saved.startAt), 'HH:mm') : ''
-    const msg = encodeURIComponent(`שלום ${saved?.clientName}! 💅\nתורך אושר:\n📅 ${date} בשעה ${time}\n✂️ ${saved?.treatmentName}`)
+    const msg = encodeURIComponent(buildWhatsAppMessage({
+      clientFirstName: getFirstName(saved?.clientName ?? ''),
+      type: 'appointment',
+      treatmentName: saved?.treatmentName,
+      date,
+      time,
+      businessName,
+      ownerName,
+    }))
     return `https://wa.me/${clean}?text=${msg}`
   }
 
