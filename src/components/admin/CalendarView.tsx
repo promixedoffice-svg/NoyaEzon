@@ -216,6 +216,7 @@ export function CalendarView({ treatments, clients }: Props) {
           appointmentId={completingAppt.id}
           clientId={completingAppt.clientId}
           clientName={completingAppt.client?.fullName ?? completingAppt.guestName ?? 'לקוחה'}
+          clientPhone={completingAppt.client?.phone ?? completingAppt.guestPhone}
           treatmentName={completingAppt.treatment?.name ?? 'טיפול'}
           price={completingAppt.price}
           onComplete={() => { setCompletingAppt(null); fetchAppointments() }}

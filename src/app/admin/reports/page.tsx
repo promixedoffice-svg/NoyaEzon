@@ -12,12 +12,15 @@ export default async function ReportsPage() {
 
   const [
     todayPayments, monthPayments, yearPayments,
+    monthReceipts, yearReceipts,
     monthVisitsCount, cancellationsCount, noShowsCount,
     clientStats, treatmentStats,
   ] = await Promise.all([
     prisma.payment.aggregate({ where: { paidAt: { gte: todayStart, lte: todayEnd } }, _sum: { amount: true } }),
     prisma.payment.findMany({ where: { paidAt: { gte: monthStart, lte: monthEnd } }, select: { amount: true, method: true } }),
     prisma.payment.aggregate({ where: { paidAt: { gte: yearStart } }, _sum: { amount: true } }),
+    prisma.receipt.aggregate({ where: { issuedAt: { gte: monthStart, lte: monthEnd }, status: 'active', deletedAt: null }, _sum: { amount: true }, _count: true }),
+    prisma.receipt.aggregate({ where: { issuedAt: { gte: yearStart }, status: 'active', deletedAt: null }, _sum: { amount: true }, _count: true }),
     prisma.visit.count({ where: { visitedAt: { gte: monthStart, lte: monthEnd } } }),
     prisma.appointment.count({ where: { status: 'cancelled', createdAt: { gte: monthStart } } }),
     prisma.appointment.count({ where: { status: 'no_show', createdAt: { gte: monthStart } } }),
@@ -63,6 +66,33 @@ export default async function ReportsPage() {
         <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 text-center"><p className="text-3xl font-bold text-brand-900">{monthVisitsCount}</p><p className="text-sm text-muted mt-1">טיפולים החודש</p></div>
         <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 text-center"><p className="text-3xl font-bold text-amber-600">{cancellationsCount}</p><p className="text-sm text-muted mt-1">ביטולים החודש</p></div>
         <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 text-center"><p className="text-3xl font-bold text-red-500">{noShowsCount}</p><p className="text-sm text-muted mt-1">אי-הגעה החודש</p></div>
+      </div>
+
+      {/* Receipt revenue vs total */}
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5">
+        <h2 className="font-semibold text-brand-900 mb-4 flex items-center gap-2">
+          🧾 קבלות — {monthName}
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-green-50 rounded-xl p-4 text-center">
+            <p className="text-xl font-bold text-green-700">{formatCurrency(monthReceipts._sum.amount ?? 0)}</p>
+            <p className="text-xs text-muted mt-1">הכנסות מגובות</p>
+          </div>
+          <div className="bg-brand-50 rounded-xl p-4 text-center">
+            <p className="text-xl font-bold text-brand-700">{monthReceipts._count}</p>
+            <p className="text-xs text-muted mt-1">קבלות הוצאו</p>
+          </div>
+          <div className={`rounded-xl p-4 text-center ${monthRevenue - (monthReceipts._sum.amount ?? 0) > 0 ? 'bg-amber-50' : 'bg-gray-50'}`}>
+            <p className={`text-xl font-bold ${monthRevenue - (monthReceipts._sum.amount ?? 0) > 0 ? 'text-amber-600' : 'text-gray-500'}`}>
+              {formatCurrency(Math.max(0, monthRevenue - (monthReceipts._sum.amount ?? 0)))}
+            </p>
+            <p className="text-xs text-muted mt-1">ללא קבלה</p>
+          </div>
+          <div className="bg-purple-50 rounded-xl p-4 text-center">
+            <p className="text-xl font-bold text-purple-700">{formatCurrency(yearReceipts._sum.amount ?? 0)}</p>
+            <p className="text-xs text-muted mt-1">קבלות השנה</p>
+          </div>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-5">

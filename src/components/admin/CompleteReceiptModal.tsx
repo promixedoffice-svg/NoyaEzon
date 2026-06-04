@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, X, FileText } from 'lucide-react'
+import { Check, X, FileText, MessageCircle } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 interface Props {
   appointmentId: string
   clientId: string | null
   clientName: string
+  clientPhone?: string | null
   treatmentName: string
   price: number | null
   onComplete: () => void
@@ -15,9 +16,10 @@ interface Props {
 }
 
 export function CompleteReceiptModal({
-  appointmentId, clientId, clientName, treatmentName, price, onComplete, onClose
+  appointmentId, clientId, clientName, clientPhone, treatmentName, price, onComplete, onClose
 }: Props) {
   const [step, setStep] = useState<'confirm' | 'receipt' | 'done'>('confirm')
+  const [issuedReceiptNumber, setIssuedReceiptNumber] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [receiptForm, setReceiptForm] = useState({
     serviceDescription: treatmentName,
@@ -47,7 +49,7 @@ export function CompleteReceiptModal({
       body: JSON.stringify({ status: 'completed', completedAt: new Date().toISOString() }),
     })
 
-    await fetch('/api/receipts', {
+    const receiptRes = await fetch('/api/receipts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -58,6 +60,8 @@ export function CompleteReceiptModal({
         method: receiptForm.method,
       }),
     })
+    const receiptData = await receiptRes.json()
+    setIssuedReceiptNumber(receiptData.receiptNumber)
 
     setLoading(false)
     setStep('done')
@@ -154,10 +158,26 @@ export function CompleteReceiptModal({
             </div>
             <div>
               <h3 className="font-bold text-brand-900">הטיפול הסתיים!</h3>
-              <p className="text-sm text-muted mt-1">הקבלה הופקה בהצלחה</p>
+              <p className="text-sm text-muted mt-1">קבלה #{issuedReceiptNumber} הופקה בהצלחה</p>
             </div>
+
+            {/* Send options */}
+            {clientPhone && (
+              <a
+                href={(() => {
+                  const clean = clientPhone.replace(/\D/g, '').replace(/^0/, '972')
+                  const msg = encodeURIComponent(`שלום ${clientName}! 💅\nקבלה מספר #${issuedReceiptNumber}\nשירות: ${receiptForm.serviceDescription}\nסכום: ${formatCurrency(parseFloat(receiptForm.amount))}\nתודה על הביקור!`)
+                  return `https://wa.me/${clean}?text=${msg}`
+                })()}
+                target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl transition text-sm"
+              >
+                <MessageCircle size={16} /> שלחי קבלה ב-WhatsApp
+              </a>
+            )}
+
             <button onClick={onComplete}
-              className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition">
+              className="w-full py-2.5 border border-brand-200 text-brand-700 hover:bg-brand-50 font-medium rounded-xl transition text-sm">
               סגרי
             </button>
           </div>

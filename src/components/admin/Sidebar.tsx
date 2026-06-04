@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Calendar, Users, Scissors, CreditCard,
-  AlertCircle, Receipt, BarChart2, Settings, LogOut
+  AlertCircle, Receipt, BarChart2, Settings, LogOut, Megaphone
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { NotificationBell } from './NotificationBell'
@@ -19,6 +19,7 @@ const navItems = [
   { href: '/admin/debts', label: 'חובות', icon: AlertCircle },
   { href: '/admin/receipts', label: 'קבלות', icon: Receipt },
   { href: '/admin/reports', label: 'דוחות', icon: BarChart2 },
+  { href: '/admin/broadcast', label: 'תפוצה', icon: Megaphone },
   { href: '/admin/settings', label: 'הגדרות', icon: Settings },
 ]
 

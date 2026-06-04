@@ -237,6 +237,7 @@ model Receipt {
   status             ReceiptStatus @default(active)
   cancelledAt        DateTime?
   cancellationReason String?
+  deletedAt          DateTime?
   issuedAt           DateTime      @default(now())
   createdAt          DateTime      @default(now())
 

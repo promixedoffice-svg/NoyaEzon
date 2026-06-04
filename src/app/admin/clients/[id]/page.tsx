@@ -26,6 +26,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   if (!client) notFound()
 
   const totalRevenue = client.payments.reduce((s, p) => s + p.amount, 0)
+  const totalReceiptRevenue = client.receipts.filter(r => r.status === 'active' && !r.deletedAt).reduce((s, r) => s + r.amount, 0)
   const totalDebt = client.debts.reduce((s, d) => s + (d.originalAmount - d.paidAmount), 0)
   const nextAppointment = client.appointments.find(a =>
     new Date(a.startAt) > new Date() && ['pending', 'confirmed'].includes(a.status)
@@ -91,7 +92,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         {/* Quick stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-brand-50">
           <div><p className="text-xs text-muted">ביקורים</p><p className="font-bold text-brand-900 text-lg">{client.visits.length}</p></div>
-          <div><p className="text-xs text-muted">סך הכנסות</p><p className="font-bold text-brand-900 text-lg">{formatCurrency(totalRevenue)}</p></div>
+          <div>
+            <p className="text-xs text-muted">סה״כ הכנסות</p>
+            <p className="font-bold text-brand-900 text-lg">{formatCurrency(totalRevenue)}</p>
+            <p className="text-xs text-green-600 mt-0.5">🧾 {formatCurrency(totalReceiptRevenue)} עם קבלות</p>
+          </div>
           <div><p className="text-xs text-muted">ביקור אחרון</p><p className="font-semibold text-brand-700 text-sm">{lastVisit ? formatDate(lastVisit.visitedAt) : '—'}</p></div>
           <div><p className="text-xs text-muted">תור הבא</p><p className="font-semibold text-brand-700 text-sm">{nextAppointment ? formatDateTime(nextAppointment.startAt) : '—'}</p></div>
         </div>
