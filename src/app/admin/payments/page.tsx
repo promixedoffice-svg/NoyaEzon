@@ -1,41 +1,21 @@
 import { prisma } from '@/lib/prisma'
 import { formatDate, formatCurrency, paymentMethodLabel } from '@/lib/utils'
 import Link from 'next/link'
-import { TrendingUp } from 'lucide-react'
+import { AddPaymentButton } from '@/components/admin/AddPaymentButton'
 
 export default async function PaymentsPage() {
-  const today = new Date()
-  const todayStart = new Date(today); todayStart.setHours(0, 0, 0, 0)
-  const todayEnd = new Date(today); todayEnd.setHours(23, 59, 59, 999)
-  const weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay())
-  weekStart.setHours(0, 0, 0, 0)
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59)
-  const yearStart = new Date(today.getFullYear(), 0, 1)
-
-  const [
-    todayAgg, weekAgg, monthAgg, yearAgg,
-    monthByMethod,
-    payments,
-  ] = await Promise.all([
-    prisma.payment.aggregate({ where: { paidAt: { gte: todayStart, lte: todayEnd } }, _sum: { amount: true } }),
-    prisma.payment.aggregate({ where: { paidAt: { gte: weekStart } }, _sum: { amount: true } }),
-    prisma.payment.aggregate({ where: { paidAt: { gte: monthStart, lte: monthEnd } }, _sum: { amount: true } }),
-    prisma.payment.aggregate({ where: { paidAt: { gte: yearStart } }, _sum: { amount: true } }),
-    prisma.payment.groupBy({
-      by: ['method'],
-      where: { paidAt: { gte: monthStart, lte: monthEnd } },
-      _sum: { amount: true },
-      orderBy: { _sum: { amount: 'desc' } },
-    }),
+  const [payments, clients] = await Promise.all([
     prisma.payment.findMany({
       include: { client: { select: { id: true, fullName: true } } },
       orderBy: { paidAt: 'desc' },
-      take: 50,
+      take: 100,
+    }),
+    prisma.client.findMany({
+      where: { deletedAt: null },
+      select: { id: true, fullName: true },
+      orderBy: { fullName: 'asc' },
     }),
   ])
-
-  const monthRevenue = monthAgg._sum.amount ?? 0
 
   const methodColors: Record<string, string> = {
     cash: 'bg-green-50 text-green-700 border-green-100',
@@ -46,57 +26,28 @@ export default async function PaymentsPage() {
     check: 'bg-gray-50 text-gray-700 border-gray-100',
   }
 
-  const monthName = today.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' })
-
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold text-brand-900">תשלומים</h1>
-
-      {/* Period stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'היום', value: todayAgg._sum.amount ?? 0, color: 'bg-green-500' },
-          { label: 'השבוע', value: weekAgg._sum.amount ?? 0, color: 'bg-blue-500' },
-          { label: monthName, value: monthRevenue, color: 'bg-brand-500' },
-          { label: 'השנה', value: yearAgg._sum.amount ?? 0, color: 'bg-purple-500' },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4">
-            <div className={`inline-flex items-center justify-center w-8 h-8 rounded-lg ${s.color} mb-2`}>
-              <TrendingUp size={16} className="text-white" />
-            </div>
-            <p className="text-xl font-bold text-brand-900">{formatCurrency(s.value)}</p>
-            <p className="text-xs text-muted mt-0.5">{s.label}</p>
-          </div>
-        ))}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-brand-900">תשלומים</h1>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/reports" className="text-sm text-muted hover:text-brand-600 transition">
+            סיכומים בדוחות ←
+          </Link>
+          <AddPaymentButton clients={clients} />
+        </div>
       </div>
 
-      {/* By method this month */}
-      {monthByMethod.length > 0 && (
-        <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5">
-          <h2 className="font-semibold text-brand-900 mb-3 text-sm">לפי אמצעי תשלום — {monthName}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {monthByMethod.map(m => {
-              const pct = monthRevenue > 0 ? ((m._sum.amount ?? 0) / monthRevenue * 100).toFixed(0) : 0
-              return (
-                <div key={m.method} className={`rounded-xl border p-3 ${methodColors[m.method] ?? 'bg-gray-50 text-gray-700 border-gray-100'}`}>
-                  <p className="text-xs font-medium opacity-75">{paymentMethodLabel(m.method)}</p>
-                  <p className="text-lg font-bold mt-0.5">{formatCurrency(m._sum.amount ?? 0)}</p>
-                  <p className="text-xs opacity-60">{pct}%</p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Payments list */}
       <div className="bg-white rounded-2xl border border-brand-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-brand-50 flex items-center justify-between">
-          <h2 className="font-semibold text-brand-900 text-sm">תשלומים אחרונים</h2>
+          <h2 className="font-semibold text-brand-900 text-sm">היסטוריית תשלומים</h2>
           <span className="text-xs text-muted">{payments.length} רשומות</span>
         </div>
         {payments.length === 0 ? (
-          <div className="px-6 py-12 text-center text-muted">אין תשלומים</div>
+          <div className="px-6 py-12 text-center text-muted">
+            <p className="text-4xl mb-3">💳</p>
+            <p>אין תשלומים עדיין</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
