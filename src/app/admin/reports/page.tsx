@@ -95,9 +95,54 @@ export default async function ReportsPage() {
       </div>
 
       {/* Monthly income vs expenses chart */}
-      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5">
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 sm:p-5">
         <h2 className="font-semibold text-brand-900 mb-4">הכנסות לעומת הוצאות — {year}</h2>
-        <div className="overflow-x-auto">
+
+        {/* Mobile: simplified card list */}
+        <div className="sm:hidden space-y-2">
+          {monthlyData.map(m => {
+            const isCurrent = m.month === today.getMonth()
+            if (m.income === 0 && m.expenses === 0 && !isCurrent) return null
+            const barWidth = m.income > 0 ? Math.max((m.income / maxMonthlyIncome) * 100, 3) : 0
+            const expenseBarWidth = m.expenses > 0 ? Math.max((m.expenses / maxMonthlyIncome) * 100, 3) : 0
+            return (
+              <div key={m.month} className={`rounded-xl p-3 ${isCurrent ? 'bg-brand-50 ring-1 ring-brand-200' : 'bg-gray-50'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-brand-900 text-sm">
+                    {MONTH_NAMES[m.month]}
+                    {isCurrent && <span className="mr-1.5 text-xs bg-brand-500 text-white px-1.5 py-0.5 rounded-md">עכשיו</span>}
+                  </span>
+                  <span className={`font-bold text-sm ${m.profit > 0 ? 'text-green-700' : m.profit < 0 ? 'text-red-600' : 'text-muted'}`}>
+                    {m.income > 0 || m.expenses > 0 ? (m.profit >= 0 ? '+' : '') + formatCurrency(m.profit) : '—'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                  <div><span className="text-muted">הכנסות: </span><span className="font-medium text-green-700">{m.income > 0 ? formatCurrency(m.income) : '—'}</span></div>
+                  <div><span className="text-muted">הוצאות: </span><span className="font-medium text-red-500">{m.expenses > 0 ? formatCurrency(m.expenses) : '—'}</span></div>
+                </div>
+                {(m.income > 0 || m.expenses > 0) && (
+                  <div className="space-y-1">
+                    {m.income > 0 && <div className="h-1.5 bg-green-100 rounded-full overflow-hidden"><div className="h-full bg-green-400 rounded-full" style={{ width: `${barWidth}%` }} /></div>}
+                    {m.expenses > 0 && <div className="h-1.5 bg-red-100 rounded-full overflow-hidden"><div className="h-full bg-red-400 rounded-full" style={{ width: `${expenseBarWidth}%` }} /></div>}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          <div className="rounded-xl p-3 bg-brand-100 border border-brand-200">
+            <div className="flex justify-between items-center">
+              <span className="font-bold text-brand-900 text-sm">סה״כ {year}</span>
+              <span className={`font-bold text-base ${yearProfit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{yearProfit >= 0 ? '+' : ''}{formatCurrency(yearProfit)}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+              <div><span className="text-muted">הכנסות: </span><span className="font-bold text-green-700">{formatCurrency(yearRevenue)}</span></div>
+              <div><span className="text-muted">הוצאות: </span><span className="font-bold text-red-500">{formatCurrency(yearExpenseTotal)}</span></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop: full table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="border-b border-brand-50 text-xs text-muted">

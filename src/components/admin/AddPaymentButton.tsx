@@ -35,8 +35,8 @@ export function AddPaymentButton({ clients }: { clients: Client[] }) {
       </button>
 
       {show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShow(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40" onClick={() => setShow(false)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-brand-900">רישום תשלום</h3>
               <button onClick={() => setShow(false)} className="p-1 rounded-lg hover:bg-brand-50 text-muted"><X size={16} /></button>

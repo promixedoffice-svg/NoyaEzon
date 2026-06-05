@@ -58,61 +58,109 @@ export default async function ReceiptsPage({
             <p className="text-brand-800 font-medium">אין קבלות כאן</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-brand-50 text-xs text-muted">
-                  <th className="text-right px-4 py-3 font-medium">#</th>
-                  <th className="text-right px-4 py-3 font-medium">תאריך</th>
-                  <th className="text-right px-4 py-3 font-medium">לקוחה</th>
-                  <th className="text-right px-4 py-3 font-medium">שירות</th>
-                  <th className="text-right px-4 py-3 font-medium">סכום</th>
-                  <th className="text-right px-4 py-3 font-medium">תשלום</th>
-                  {(showCancelled || showDeleted) && <th className="text-right px-4 py-3 font-medium">סיבה</th>}
-                  <th className="text-right px-4 py-3 font-medium">פעולות</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receipts.map(r => (
-                  <tr key={r.id} className={`border-b border-brand-50 hover:bg-brand-50/50 transition ${r.deletedAt || r.status === 'cancelled' ? 'opacity-60' : ''}`}>
-                    <td className="px-4 py-3.5 font-mono font-medium text-brand-700">#{r.receiptNumber}</td>
-                    <td className="px-4 py-3.5">{formatDate(r.issuedAt)}</td>
-                    <td className="px-4 py-3.5">
-                      <Link href={`/admin/clients/${r.client.id}`} className="text-brand-600 hover:text-brand-800 font-medium transition">{r.client.fullName}</Link>
-                    </td>
-                    <td className="px-4 py-3.5 max-w-[130px] truncate">{r.serviceDescription}</td>
-                    <td className="px-4 py-3.5 font-semibold">{formatCurrency(r.amount)}</td>
-                    <td className="px-4 py-3.5">{paymentMethodLabel(r.method)}</td>
-                    {(showCancelled || showDeleted) && (
-                      <td className="px-4 py-3.5 text-muted text-xs max-w-[100px] truncate">
-                        {r.cancellationReason ?? '—'}
-                      </td>
-                    )}
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        {!r.deletedAt && (
-                          <Link href={`/admin/receipts/${r.id}`} className="flex items-center gap-1 text-brand-500 hover:text-brand-700 text-xs font-medium transition">
-                            <Printer size={12} />
-                          </Link>
-                        )}
-                        <ReceiptRowActions
-                          receiptId={r.id}
-                          receiptNumber={r.receiptNumber}
-                          isDeleted={!!r.deletedAt}
-                          isCancelled={r.status === 'cancelled'}
-                          clientPhone={r.client.phone}
-                          clientEmail={r.client.email}
-                          amount={r.amount}
-                          serviceDescription={r.serviceDescription}
-                          clientName={r.client.fullName}
-                        />
+          <>
+            {/* Mobile: card layout */}
+            <div className="md:hidden divide-y divide-brand-50">
+              {receipts.map(r => (
+                <div key={r.id} className={`p-4 ${r.deletedAt || r.status === 'cancelled' ? 'opacity-60' : ''}`}>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-mono text-xs font-bold text-brand-600">#{r.receiptNumber}</span>
+                        <span className="text-xs text-muted">{formatDate(r.issuedAt)}</span>
+                        {r.status === 'cancelled' && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">מבוטלת</span>}
+                        {r.deletedAt && <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium">נמחקה</span>}
                       </div>
-                    </td>
+                      <Link href={`/admin/clients/${r.client.id}`} className="font-semibold text-brand-900 hover:text-brand-600 transition block truncate">{r.client.fullName}</Link>
+                      <p className="text-xs text-muted truncate mt-0.5">{r.serviceDescription}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="font-bold text-green-700 text-sm">{formatCurrency(r.amount)}</span>
+                        <span className="text-xs text-muted">{paymentMethodLabel(r.method)}</span>
+                      </div>
+                      {(showCancelled || showDeleted) && r.cancellationReason && (
+                        <p className="text-xs text-amber-700 mt-1 italic">{r.cancellationReason}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {!r.deletedAt && (
+                        <Link href={`/admin/receipts/${r.id}`} className="p-2 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-500 transition">
+                          <Printer size={14} />
+                        </Link>
+                      )}
+                      <ReceiptRowActions
+                        receiptId={r.id}
+                        receiptNumber={r.receiptNumber}
+                        isDeleted={!!r.deletedAt}
+                        isCancelled={r.status === 'cancelled'}
+                        clientPhone={r.client.phone}
+                        clientEmail={r.client.email}
+                        amount={r.amount}
+                        serviceDescription={r.serviceDescription}
+                        clientName={r.client.fullName}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table layout */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-brand-50 text-xs text-muted">
+                    <th className="text-right px-4 py-3 font-medium">#</th>
+                    <th className="text-right px-4 py-3 font-medium">תאריך</th>
+                    <th className="text-right px-4 py-3 font-medium">לקוחה</th>
+                    <th className="text-right px-4 py-3 font-medium">שירות</th>
+                    <th className="text-right px-4 py-3 font-medium">סכום</th>
+                    <th className="text-right px-4 py-3 font-medium">תשלום</th>
+                    {(showCancelled || showDeleted) && <th className="text-right px-4 py-3 font-medium">סיבה</th>}
+                    <th className="text-right px-4 py-3 font-medium">פעולות</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {receipts.map(r => (
+                    <tr key={r.id} className={`border-b border-brand-50 hover:bg-brand-50/50 transition ${r.deletedAt || r.status === 'cancelled' ? 'opacity-60' : ''}`}>
+                      <td className="px-4 py-3.5 font-mono font-medium text-brand-700">#{r.receiptNumber}</td>
+                      <td className="px-4 py-3.5">{formatDate(r.issuedAt)}</td>
+                      <td className="px-4 py-3.5">
+                        <Link href={`/admin/clients/${r.client.id}`} className="text-brand-600 hover:text-brand-800 font-medium transition">{r.client.fullName}</Link>
+                      </td>
+                      <td className="px-4 py-3.5 max-w-[130px] truncate">{r.serviceDescription}</td>
+                      <td className="px-4 py-3.5 font-semibold">{formatCurrency(r.amount)}</td>
+                      <td className="px-4 py-3.5">{paymentMethodLabel(r.method)}</td>
+                      {(showCancelled || showDeleted) && (
+                        <td className="px-4 py-3.5 text-muted text-xs max-w-[100px] truncate">
+                          {r.cancellationReason ?? '—'}
+                        </td>
+                      )}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
+                          {!r.deletedAt && (
+                            <Link href={`/admin/receipts/${r.id}`} className="flex items-center gap-1 text-brand-500 hover:text-brand-700 text-xs font-medium transition">
+                              <Printer size={12} />
+                            </Link>
+                          )}
+                          <ReceiptRowActions
+                            receiptId={r.id}
+                            receiptNumber={r.receiptNumber}
+                            isDeleted={!!r.deletedAt}
+                            isCancelled={r.status === 'cancelled'}
+                            clientPhone={r.client.phone}
+                            clientEmail={r.client.email}
+                            amount={r.amount}
+                            serviceDescription={r.serviceDescription}
+                            clientName={r.client.fullName}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

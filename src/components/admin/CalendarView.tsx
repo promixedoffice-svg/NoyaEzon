@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   format, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
   addDays, addWeeks, addMonths, subWeeks, subMonths, isSameDay, isToday
@@ -22,7 +22,7 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 7)
 interface Props { treatments: Treatment[]; clients: Client[] }
 
 export function CalendarView({ treatments, clients }: Props) {
-  const [view, setView] = useState<ViewMode>('week')
+  const [view, setView] = useState<ViewMode>('day')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([])
@@ -31,6 +31,7 @@ export function CalendarView({ treatments, clients }: Props) {
   const [showNewModal, setShowNewModal] = useState(false)
   const [newApptTime, setNewApptTime] = useState<Date | null>(null)
   const [completingAppt, setCompletingAppt] = useState<Appointment | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true)
@@ -49,6 +50,24 @@ export function CalendarView({ treatments, clients }: Props) {
   }, [view, currentDate])
 
   useEffect(() => { fetchAppointments() }, [fetchAppointments])
+
+  // Default to day view on mobile
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) setView('day')
+    else setView('week')
+  }, [])
+
+  // Auto-scroll to current hour in day/week view
+  useEffect(() => {
+    if (view !== 'month' && scrollRef.current) {
+      const now = new Date()
+      const hour = now.getHours()
+      if (hour >= 7 && hour <= 21) {
+        const scrollTo = Math.max(0, (hour - 7 - 1) * 64)
+        scrollRef.current.scrollTop = scrollTo
+      }
+    }
+  }, [view])
 
   function navigate(dir: 1 | -1) {
     if (view === 'day') setCurrentDate(prev => addDays(prev, dir))
@@ -84,22 +103,40 @@ export function CalendarView({ treatments, clients }: Props) {
 
   return (
     <div className="bg-white rounded-2xl border border-brand-100 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-brand-50">
-        <div className="flex items-center gap-2">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-brand-50 text-brand-600 transition"><ChevronRight size={18} /></button>
-          <button onClick={() => setCurrentDate(new Date())} className="text-sm font-semibold text-brand-900 px-3 py-1.5 rounded-xl hover:bg-brand-50 transition min-w-[160px] text-center">{headerLabel()}</button>
-          <button onClick={() => navigate(1)} className="p-2 rounded-xl hover:bg-brand-50 text-brand-600 transition"><ChevronLeft size={18} /></button>
+      {/* ── Calendar Header ── */}
+      <div className="border-b border-brand-50">
+        {/* Row 1: Navigation + desktop controls */}
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-brand-50 text-brand-600 transition"><ChevronRight size={18} /></button>
+            <button onClick={() => setCurrentDate(new Date())} className="text-sm font-semibold text-brand-900 px-2 sm:px-3 py-1.5 rounded-xl hover:bg-brand-50 transition text-center max-w-[160px] sm:min-w-[160px] truncate">{headerLabel()}</button>
+            <button onClick={() => navigate(1)} className="p-2 rounded-xl hover:bg-brand-50 text-brand-600 transition"><ChevronLeft size={18} /></button>
+          </div>
+          {/* Desktop only controls */}
+          <div className="hidden sm:flex items-center gap-2">
+            <div className="bg-brand-50 rounded-xl p-1 flex">
+              {(['day', 'week', 'month'] as ViewMode[]).map(v => (
+                <button key={v} onClick={() => setView(v)} className={cn('px-3 py-1.5 rounded-lg text-sm font-medium transition', view === v ? 'bg-white text-brand-900 shadow-sm' : 'text-muted hover:text-brand-700')}>
+                  {v === 'day' ? 'יום' : v === 'week' ? 'שבוע' : 'חודש'}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => { setNewApptTime(null); setShowNewModal(true) }} className="flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition shadow-sm">
+              <Plus size={16} /> תור חדש
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="bg-brand-50 rounded-xl p-1 flex">
-            {(['day', 'week', 'month'] as ViewMode[]).map(v => (
-              <button key={v} onClick={() => setView(v)} className={cn('px-3 py-1.5 rounded-lg text-sm font-medium transition', view === v ? 'bg-white text-brand-900 shadow-sm' : 'text-muted hover:text-brand-700')}>
-                {v === 'day' ? 'יום' : v === 'week' ? 'שבוע' : 'חודש'}
+        {/* Row 2: Mobile controls only */}
+        <div className="sm:hidden flex items-center gap-2 px-4 pb-3">
+          <div className="bg-brand-50 rounded-xl p-1 flex flex-1">
+            {(['day', 'month'] as ViewMode[]).map(v => (
+              <button key={v} onClick={() => setView(v)} className={cn('flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition', view === v ? 'bg-white text-brand-900 shadow-sm' : 'text-muted')}>
+                {v === 'day' ? 'יום' : 'חודש'}
               </button>
             ))}
           </div>
-          <button onClick={() => { setNewApptTime(null); setShowNewModal(true) }} className="flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition shadow-sm">
-            <Plus size={16} /> תור חדש
+          <button onClick={() => { setNewApptTime(null); setShowNewModal(true) }} className="flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm">
+            <Plus size={16} /> תור
           </button>
         </div>
       </div>
@@ -113,8 +150,8 @@ export function CalendarView({ treatments, clients }: Props) {
       {view === 'month' ? (
         <MonthView currentDate={currentDate} appointments={appointments} onDayClick={day => { setCurrentDate(day); setView('day') }} onApptClick={setSelectedAppt} />
       ) : (
-        <div className="overflow-auto">
-          <div className="min-w-[600px]">
+        <div className="overflow-auto" ref={scrollRef}>
+          <div className={view === 'week' ? 'min-w-[600px]' : ''}>
             <div className={cn('grid border-b border-brand-50', view === 'week' ? 'grid-cols-[60px_repeat(7,1fr)]' : 'grid-cols-[60px_1fr]')}>
               <div className="border-l border-brand-50" />
               {weekDays.map(day => (
@@ -141,6 +178,18 @@ export function CalendarView({ treatments, clients }: Props) {
                       setNewApptTime(d); setShowNewModal(true)
                     }}>
                     {HOURS.map(h => (<div key={h} className="absolute w-full border-t border-brand-50" style={{ top: `${(h-7)*64}px` }} />))}
+                    {/* Current time indicator */}
+                    {isToday(day) && (() => {
+                      const now = new Date()
+                      const nowMin = (now.getHours() - 7) * 60 + now.getMinutes()
+                      if (nowMin < 0 || nowMin > HOURS.length * 60) return null
+                      return (
+                        <div className="absolute left-0 right-0 z-10 pointer-events-none flex items-center" style={{ top: `${(nowMin / 60) * 64}px` }}>
+                          <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                          <div className="flex-1 h-px bg-red-400" />
+                        </div>
+                      )
+                    })()}
                     {/* Blocked times */}
                     {blockedTimes.filter(bt => {
                       const btStart = new Date(bt.startAt); const btEnd = new Date(bt.endAt)
@@ -183,8 +232,12 @@ export function CalendarView({ treatments, clients }: Props) {
       )}
 
       {selectedAppt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setSelectedAppt(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40" onClick={() => setSelectedAppt(null)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="sm:hidden flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 bg-gray-200 rounded-full" />
+            </div>
+            <div className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div><h3 className="font-bold text-brand-900 text-lg">{selectedAppt.client?.fullName ?? selectedAppt.guestName ?? 'לקוחה'}</h3><p className="text-muted text-sm">{selectedAppt.treatment?.name}</p></div>
               <button onClick={() => setSelectedAppt(null)} className="p-1 rounded-lg hover:bg-brand-50 text-muted transition"><X size={18} /></button>
@@ -212,6 +265,7 @@ export function CalendarView({ treatments, clients }: Props) {
               {(selectedAppt.status === 'confirmed' || selectedAppt.status === 'pending') && (
                 <button onClick={() => updateStatus(selectedAppt, 'cancelled')} className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium px-4 py-2 rounded-xl transition"><X size={14} /> ביטול</button>
               )}
+            </div>
             </div>
           </div>
         </div>
