@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 
+export async function GET() {
+  const session = await requireAuth()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const clients = await prisma.client.findMany({
+    where: { deletedAt: null },
+    orderBy: { fullName: 'asc' },
+  })
+  return NextResponse.json(clients)
+}
+
 export async function POST(req: NextRequest) {
   const session = await requireAuth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

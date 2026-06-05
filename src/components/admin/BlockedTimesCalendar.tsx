@@ -16,23 +16,22 @@ function slotToTime(slot: number) {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 }
 
-// UTC-naive helper: treat business clock times as UTC to match availability API.
-// "10:00 on June 5" → 2024-06-05T10:00:00Z regardless of server/browser TZ.
-function bizUTC(dateLocal: Date, h: number, m: number): Date {
-  const str = format(dateLocal, 'yyyy-MM-dd') // local date string
-  const [y, mo, d] = str.split('-').map(Number)
-  return new Date(Date.UTC(y, mo - 1, d, h, m, 0, 0))
+// Browser is in Israel timezone — setHours() creates correct real-UTC timestamps.
+function cellTime(day: Date, h: number, m: number): Date {
+  const d = new Date(day)
+  d.setHours(h, m, 0, 0)
+  return d
 }
 
-function bizUTCFromStr(dateStr: string, h: number, m: number): Date {
-  const [y, mo, d] = dateStr.split('-').map(Number)
-  return new Date(Date.UTC(y, mo - 1, d, h, m, 0, 0))
+function parseLocalTime(dateStr: string, h: number, m: number): Date {
+  const d = new Date(dateStr + 'T12:00:00') // noon avoids DST-boundary date shift
+  d.setHours(h, m, 0, 0)
+  return d
 }
 
-// Display UTC time as business clock (inverse of bizUTC)
-function utcHHMM(isoStr: string): string {
+function localHHMM(isoStr: string): string {
   const d = new Date(isoStr)
-  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 interface BlockedTime { id: string; startAt: string; endAt: string; reason: string | null; isVacation: boolean }
@@ -68,7 +67,7 @@ export function BlockedTimesCalendar() {
   // ── Helpers ──────────────────────────────────────────
   function getBlockedAt(day: Date, slot: number): BlockedTime | null {
     const totalMin = H_START * 60 + slot * 30
-    const slotStart = bizUTC(day, Math.floor(totalMin / 60), totalMin % 60)
+    const slotStart = cellTime(day, Math.floor(totalMin / 60), totalMin % 60)
     const slotEnd = new Date(slotStart.getTime() + 30 * 60000)
     return blocked.find(b => new Date(b.startAt) < slotEnd && new Date(b.endAt) > slotStart) ?? null
   }
@@ -80,8 +79,8 @@ export function BlockedTimesCalendar() {
   }
 
   function getFullDayBlock(day: Date): BlockedTime | null {
-    const d0 = bizUTC(day, 0, 0)
-    const d1 = bizUTC(day, 23, 59)
+    const d0 = cellTime(day, 0, 0)
+    const d1 = cellTime(day, 23, 59)
     return blocked.find(b => new Date(b.startAt) <= d0 && new Date(b.endAt) >= d1) ?? null
   }
 
@@ -148,13 +147,13 @@ export function BlockedTimesCalendar() {
     setSaving(true)
     let startAt: Date, endAt: Date
     if (pending.fullDay) {
-      startAt = bizUTC(pending.day, 0, 0)
-      endAt   = bizUTC(pending.day, 23, 59)
+      startAt = cellTime(pending.day, 0, 0)
+      endAt   = cellTime(pending.day, 23, 59)
     } else {
       const sm = H_START * 60 + pending.startSlot * 30
       const em = H_START * 60 + (pending.endSlot + 1) * 30
-      startAt = bizUTC(pending.day, Math.floor(sm / 60), sm % 60)
-      endAt   = bizUTC(pending.day, Math.floor(em / 60), em % 60)
+      startAt = cellTime(pending.day, Math.floor(sm / 60), sm % 60)
+      endAt   = cellTime(pending.day, Math.floor(em / 60), em % 60)
     }
     const res = await fetch('/api/blocked-times', {
       method: 'POST',
@@ -176,17 +175,12 @@ export function BlockedTimesCalendar() {
   }
 
   function openEdit(bt: BlockedTime) {
-    // Use UTC hours for display (since we store in UTC-naive format)
     const start = new Date(bt.startAt)
-    const end   = new Date(bt.endAt)
-    const dateStr = (() => {
-      const y = start.getUTCFullYear(), mo = start.getUTCMonth() + 1, d = start.getUTCDate()
-      return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-    })()
+    const y = start.getFullYear(), mo = start.getMonth() + 1, d = start.getDate()
     setEditForm({
-      date: dateStr,
-      startTime: utcHHMM(bt.startAt),
-      endTime: utcHHMM(bt.endAt),
+      date: `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`,
+      startTime: localHHMM(bt.startAt),
+      endTime: localHHMM(bt.endAt),
       reason: bt.reason ?? '',
       isVacation: bt.isVacation,
     })
@@ -201,8 +195,8 @@ export function BlockedTimesCalendar() {
     await fetch(`/api/blocked-times/${editingBlock.id}`, { method: 'DELETE' })
     const [sh, sm] = editForm.startTime.split(':').map(Number)
     const [eh, em] = editForm.endTime.split(':').map(Number)
-    const startAt = bizUTCFromStr(editForm.date, sh, sm)
-    const endAt   = bizUTCFromStr(editForm.date, eh, em)
+    const startAt = parseLocalTime(editForm.date, sh, sm)
+    const endAt   = parseLocalTime(editForm.date, eh, em)
     const res = await fetch('/api/blocked-times', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -353,13 +347,9 @@ export function BlockedTimesCalendar() {
                 </p>
                 {clickedBlock.reason && <p className="text-sm text-muted mt-0.5">{clickedBlock.reason}</p>}
                 <p className="text-xs text-muted mt-1">
-                  {(() => {
-                    const d = new Date(clickedBlock.startAt)
-                    const local = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-                    return format(local, 'EEEE d MMMM', { locale: he })
-                  })()} {utcHHMM(clickedBlock.startAt)}
+                  {format(new Date(clickedBlock.startAt), 'EEEE d MMMM', { locale: he })} {localHHMM(clickedBlock.startAt)}
                   {' – '}
-                  {utcHHMM(clickedBlock.endAt)}
+                  {localHHMM(clickedBlock.endAt)}
                 </p>
               </div>
               <button onClick={() => setClickedBlock(null)} className="p-1 rounded-lg hover:bg-brand-50 text-muted shrink-0"><X size={16} /></button>
@@ -501,7 +491,7 @@ export function BlockedTimesCalendar() {
                 <span className={`font-medium flex-1 truncate ${b.isVacation ? 'text-orange-700' : 'text-red-700'}`}>
                   {b.isVacation ? '🏖️' : '🔒'} {b.reason ?? (b.isVacation ? 'חופשה' : 'חסום')}
                   <span className="text-muted font-normal mr-1">
-                    · {(() => { const d = new Date(b.startAt); return `${d.getUTCDate()}/${d.getUTCMonth()+1} ${utcHHMM(b.startAt)}` })()} – {utcHHMM(b.endAt)}
+                    · {(() => { const d = new Date(b.startAt); return `${d.getDate()}/${d.getMonth()+1} ${localHHMM(b.startAt)}` })()} – {localHHMM(b.endAt)}
                   </span>
                 </span>
                 <button

@@ -50,7 +50,12 @@ export function MissingReceiptsAlert({ appointments }: { appointments: Appointme
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <a
-                href={`/admin/receipts`}
+                href={(() => {
+                  const p = new URLSearchParams({ new: '1', clientName: appt.clientName, service: appt.treatmentName })
+                  if (appt.clientId) p.set('clientId', appt.clientId)
+                  if (appt.price) p.set('amount', String(appt.price))
+                  return `/admin/receipts?${p.toString()}`
+                })()}
                 className="flex items-center gap-1 text-xs bg-brand-500 hover:bg-brand-600 text-white px-3 py-1.5 rounded-lg transition font-medium"
               >
                 <FileText size={11} /> קבלה

@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// Helper: create a Date treating the business clock as UTC-naive.
-// "10:00 on 2024-06-05" always becomes 2024-06-05T10:00:00Z regardless of server TZ.
-function biz(year: number, month: number, day: number, h = 0, m = 0, s = 0): Date {
-  return new Date(Date.UTC(year, month - 1, day, h, m, s, 0))
+// Convert a wall-clock time in Israel (Asia/Jerusalem, DST-aware) to a real UTC Date.
+// Probes noon UTC on that date to get the Israel offset, so summer (+3) and winter (+2) both work.
+function israelToUTC(dateStr: string, h: number, m: number, s = 0): Date {
+  const [y, mo, d] = dateStr.split('-').map(Number)
+  const noon = new Date(Date.UTC(y, mo - 1, d, 12, 0, 0))
+  const israelHour = parseInt(
+    new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', hour: 'numeric', hour12: false }).format(noon),
+    10
+  )
+  const offsetH = israelHour - 12 // UTC+2 in winter, UTC+3 in summer
+  return new Date(Date.UTC(y, mo - 1, d, h - offsetH, m, s))
 }
 
 export async function GET(req: NextRequest) {
@@ -17,12 +24,13 @@ export async function GET(req: NextRequest) {
   }
 
   const [year, month, day] = dateStr.split('-').map(Number)
-  const dayStart = biz(year, month, day, 0, 0, 0)
-  const dayEnd   = biz(year, month, day, 23, 59, 59)
+  const dayStart = israelToUTC(dateStr, 0, 0, 0)
+  const dayEnd   = israelToUTC(dateStr, 23, 59, 59)
+  const dow = new Date(Date.UTC(year, month - 1, day)).getUTCDay()
 
   const [treatment, workHours, blockedTimes, existingAppts, availSettings] = await Promise.all([
     prisma.treatment.findUnique({ where: { id: treatmentId } }),
-    prisma.workHours.findFirst({ where: { dayOfWeek: biz(year, month, day).getUTCDay() } }),
+    prisma.workHours.findFirst({ where: { dayOfWeek: dow } }),
     prisma.blockedTime.findMany({
       where: {
         OR: [
@@ -56,10 +64,12 @@ export async function GET(req: NextRequest) {
   const availableSlots: string[] = []
 
   for (let m = startMin; m + totalDur <= endMin; m += slotInterval) {
-    const slotStart = biz(year, month, day, Math.floor(m / 60), m % 60)
+    const slotH = Math.floor(m / 60)
+    const slotM = m % 60
+    const slotStart = israelToUTC(dateStr, slotH, slotM)
     const slotEnd   = new Date(slotStart.getTime() + totalDur * 60000)
 
-    // Skip past slots
+    // Skip slots too close to now
     const minHours = availSettings?.minBookingHours ?? 24
     if (slotStart.getTime() < Date.now() + minHours * 3600000) continue
 
@@ -77,9 +87,7 @@ export async function GET(req: NextRequest) {
     )
     if (conflicting) continue
 
-    const hh = String(Math.floor(m / 60)).padStart(2, '0')
-    const mm = String(m % 60).padStart(2, '0')
-    availableSlots.push(`${hh}:${mm}`)
+    availableSlots.push(`${String(slotH).padStart(2, '0')}:${String(slotM).padStart(2, '0')}`)
   }
 
   return NextResponse.json({ slots: availableSlots })
