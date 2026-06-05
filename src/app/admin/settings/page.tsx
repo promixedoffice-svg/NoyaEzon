@@ -14,19 +14,19 @@ export default async function SettingsPage() {
   ])
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold text-brand-900">הגדרות</h1>
+    <div className="space-y-4 sm:space-y-6 max-w-2xl">
+      <h1 className="text-xl sm:text-2xl font-bold text-brand-900">הגדרות</h1>
 
       {/* Notifications */}
-      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 sm:p-6">
         <h2 className="font-semibold text-brand-900 mb-4 flex items-center gap-2">
           <Bell size={16} /> התראות
         </h2>
         <NotificationSettings />
       </div>
 
-      {/* Mobile */}
-      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-6">
+      {/* Mobile FAB */}
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 sm:p-6">
         <h2 className="font-semibold text-brand-900 mb-4 flex items-center gap-2">
           <Smartphone size={16} /> מובייל
         </h2>
@@ -36,7 +36,7 @@ export default async function SettingsPage() {
       <SettingsForm settings={settings} />
       <WorkHoursForm workHours={workHours} availSettings={availSettings} />
 
-      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 sm:p-6">
         <BlockedTimesCalendar />
       </div>
     </div>

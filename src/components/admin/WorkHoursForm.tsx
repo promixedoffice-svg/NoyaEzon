@@ -39,26 +39,26 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
     setLoading(false); setSaved(true); router.refresh()
   }
 
-  const inputClass = "px-3 py-2 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition"
+  const inputClass = "px-3 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition touch-manipulation"
 
   return (
-    <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-6">
+    <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 sm:p-6">
       <h2 className="font-semibold text-brand-900 mb-5">שעות עבודה וזמינות</h2>
       <form onSubmit={handleSave} className="space-y-5">
-        <div className="space-y-2">
+        <div className="space-y-3">
           {hours.map(h => (
-            <div key={h.dayOfWeek} className="flex items-center gap-4">
-              <div className="w-20 shrink-0">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={h.isWorking} onChange={e => updateDay(h.dayOfWeek, 'isWorking', e.target.checked)} className="w-4 h-4 rounded accent-brand-500" />
+            <div key={h.dayOfWeek} className="flex items-center gap-3">
+              <div className="w-16 sm:w-20 shrink-0">
+                <label className="flex items-center gap-2 cursor-pointer touch-manipulation">
+                  <input type="checkbox" checked={h.isWorking} onChange={e => updateDay(h.dayOfWeek, 'isWorking', e.target.checked)} className="w-5 h-5 rounded accent-brand-500" />
                   <span className="text-sm font-medium text-brand-800">{dayOfWeekLabel(String(h.dayOfWeek))}</span>
                 </label>
               </div>
               {h.isWorking ? (
-                <div className="flex items-center gap-2">
-                  <input type="time" value={h.startTime} onChange={e => updateDay(h.dayOfWeek, 'startTime', e.target.value)} className={inputClass} dir="ltr" />
-                  <span className="text-muted text-sm">—</span>
-                  <input type="time" value={h.endTime} onChange={e => updateDay(h.dayOfWeek, 'endTime', e.target.value)} className={inputClass} dir="ltr" />
+                <div className="flex items-center gap-2 flex-1">
+                  <input type="time" value={h.startTime} onChange={e => updateDay(h.dayOfWeek, 'startTime', e.target.value)} className={`${inputClass} flex-1 min-w-0`} dir="ltr" />
+                  <span className="text-muted text-sm shrink-0">—</span>
+                  <input type="time" value={h.endTime} onChange={e => updateDay(h.dayOfWeek, 'endTime', e.target.value)} className={`${inputClass} flex-1 min-w-0`} dir="ltr" />
                 </div>
               ) : <span className="text-sm text-muted">סגור</span>}
             </div>
@@ -77,7 +77,7 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
                   key={v}
                   type="button"
                   onClick={() => { setAvail(p => ({ ...p, slotIntervalMinutes: v })); setSaved(false) }}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition ${avail.slotIntervalMinutes === v ? 'bg-brand-500 text-white border-brand-500' : 'border-brand-200 text-brand-700 hover:bg-brand-50'}`}
+                  className={`flex-1 py-3 sm:py-2.5 rounded-xl text-sm font-medium border transition touch-manipulation ${avail.slotIntervalMinutes === v ? 'bg-brand-500 text-white border-brand-500' : 'border-brand-200 text-brand-700 hover:bg-brand-50 active:bg-brand-100'}`}
                 >
                   {label}
                 </button>
@@ -88,17 +88,17 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-brand-800 mb-1.5">מינימום שעות מראש</label>
-              <input type="number" value={avail.minBookingHours} onChange={e => setAvail(p => ({ ...p, minBookingHours: parseInt(e.target.value)||24 }))} className="w-full px-4 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition" min="1" dir="ltr" />
+              <input type="number" value={avail.minBookingHours} onChange={e => setAvail(p => ({ ...p, minBookingHours: parseInt(e.target.value)||24 }))} className="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-50 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition touch-manipulation" min="1" dir="ltr" inputMode="numeric" />
             </div>
             <div>
               <label className="block text-sm font-medium text-brand-800 mb-1.5">מקסימום תורים ביום</label>
-              <input type="number" value={avail.maxAppointmentsPerDay ?? ''} onChange={e => setAvail(p => ({ ...p, maxAppointmentsPerDay: e.target.value ? parseInt(e.target.value) : null }))} className="w-full px-4 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition" min="1" dir="ltr" placeholder="ללא הגבלה" />
+              <input type="number" value={avail.maxAppointmentsPerDay ?? ''} onChange={e => setAvail(p => ({ ...p, maxAppointmentsPerDay: e.target.value ? parseInt(e.target.value) : null }))} className="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-50 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition touch-manipulation" min="1" dir="ltr" inputMode="numeric" placeholder="ללא הגבלה" />
             </div>
           </div>
         </div>
 
         {saved && <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-3 border border-green-100">✓ נשמר בהצלחה</div>}
-        <button type="submit" disabled={loading} className="w-full py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold rounded-xl transition">{loading ? 'שומרת...' : 'שמירת שעות עבודה'}</button>
+        <button type="submit" disabled={loading} className="w-full py-3.5 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 disabled:bg-brand-300 text-white font-semibold rounded-xl transition touch-manipulation text-base">{loading ? 'שומרת...' : 'שמירת שעות עבודה'}</button>
       </form>
     </div>
   )

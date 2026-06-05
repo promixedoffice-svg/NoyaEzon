@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Users, Calendar, AlertCircle, TrendingUp, FileText, Receipt } from 'lucide-react'
 import { PendingApprovals } from '@/components/admin/PendingApprovals'
 import { MissingReceiptsAlert } from '@/components/admin/MissingReceiptsAlert'
+import { DailyGreeting } from '@/components/admin/DailyGreeting'
 
 export default async function DashboardPage() {
   const today = new Date()
@@ -13,6 +14,7 @@ export default async function DashboardPage() {
   const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59)
 
   const [
+    businessSettings,
     totalClients,
     todayAppointments,
     pendingAppointments,
@@ -22,6 +24,7 @@ export default async function DashboardPage() {
     upcomingAppointments,
     completedWithoutReceipt,
   ] = await Promise.all([
+    prisma.businessSettings.findFirst({ select: { ownerName: true } }),
     prisma.client.count({ where: { deletedAt: null } }),
     prisma.appointment.findMany({
       where: { startAt: { gte: todayStart, lte: todayEnd }, status: { not: 'cancelled' } },
@@ -77,7 +80,8 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-brand-900">שלום 👋</h1>
+        <DailyGreeting ownerName={businessSettings?.ownerName ?? 'יפה'} />
+        <h1 className="text-2xl font-bold text-brand-900 mt-1">שלום 👋</h1>
         <p className="text-muted text-sm mt-0.5">{hebrewDate}</p>
       </div>
 
