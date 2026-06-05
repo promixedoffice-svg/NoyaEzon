@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { SettingsForm } from '@/components/admin/SettingsForm'
 import { WorkHoursForm } from '@/components/admin/WorkHoursForm'
-import { BlockedTimesManager } from '@/components/admin/BlockedTimesManager'
+import { BlockedTimesCalendar } from '@/components/admin/BlockedTimesCalendar'
 import { NotificationSettings } from '@/components/admin/NotificationSettings'
 import { FabSettings } from '@/components/admin/FabSettings'
 import { Bell, Smartphone } from 'lucide-react'
@@ -37,7 +37,7 @@ export default async function SettingsPage() {
       <WorkHoursForm workHours={workHours} availSettings={availSettings} />
 
       <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-6">
-        <BlockedTimesManager />
+        <BlockedTimesCalendar />
       </div>
     </div>
   )
