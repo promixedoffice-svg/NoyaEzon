@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Calendar, Users, Scissors,
   AlertCircle, Receipt, BarChart2, Settings, LogOut,
-  Megaphone, TrendingDown, MoreHorizontal, X
+  Megaphone, TrendingDown, MoreHorizontal, X, ListTodo
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { NotificationBell } from './NotificationBell'
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/admin', label: 'בקרה', icon: LayoutDashboard, exact: true },
   { href: '/admin/calendar', label: 'יומן', icon: Calendar },
   { href: '/admin/clients', label: 'לקוחות', icon: Users },
+  { href: '/admin/tasks', label: 'משימות', icon: ListTodo },
   { href: '/admin/treatments', label: 'טיפולים', icon: Scissors },
   { href: '/admin/debts', label: 'חובות', icon: AlertCircle },
   { href: '/admin/receipts', label: 'קבלות', icon: Receipt },
@@ -29,12 +30,13 @@ const navItems = [
 const primaryBottomItems = [
   { href: '/admin', label: 'בקרה', icon: LayoutDashboard, exact: true },
   { href: '/admin/calendar', label: 'יומן', icon: Calendar },
+  { href: '/admin/tasks', label: 'משימות', icon: ListTodo },
   { href: '/admin/clients', label: 'לקוחות', icon: Users },
-  { href: '/admin/receipts', label: 'קבלות', icon: Receipt },
 ]
 
 // All remaining items appear in the "More" drawer
 const moreItems = [
+  { href: '/admin/receipts', label: 'קבלות', icon: Receipt },
   { href: '/admin/treatments', label: 'טיפולים', icon: Scissors },
   { href: '/admin/debts', label: 'חובות', icon: AlertCircle },
   { href: '/admin/reports', label: 'דוחות', icon: BarChart2 },

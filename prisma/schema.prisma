@@ -72,6 +72,7 @@ model BusinessSettings {
   logoUrl               String?
   receiptStartingNumber Int      @default(1000)
   receiptFooterText     String?  @default("תודה על הביקור!")
+  taskReminderMinutes   Int      @default(30)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -259,6 +260,19 @@ model Receipt {
   payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
   @@map("receipts")
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  dueAt       DateTime?
+  completedAt DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("tasks")
 }
 
 model Expense {

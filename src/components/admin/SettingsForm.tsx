@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Props {
-  settings: { id: string; businessName: string; ownerName: string | null; businessNumber: string | null; phone: string | null; email: string | null; address: string | null; receiptStartingNumber: number; receiptFooterText: string | null } | null
+  settings: { id: string; businessName: string; ownerName: string | null; businessNumber: string | null; phone: string | null; email: string | null; address: string | null; receiptStartingNumber: number; receiptFooterText: string | null; taskReminderMinutes?: number } | null
 }
 
 export function SettingsForm({ settings }: Props) {
@@ -20,6 +20,7 @@ export function SettingsForm({ settings }: Props) {
     address: settings?.address ?? '',
     receiptStartingNumber: settings?.receiptStartingNumber ?? 1000,
     receiptFooterText: settings?.receiptFooterText ?? 'תודה על הביקור!',
+    taskReminderMinutes: settings?.taskReminderMinutes ?? 30,
   })
 
   function set(field: string, value: string | number) { setForm(prev => ({ ...prev, [field]: value })); setSaved(false) }
@@ -53,6 +54,23 @@ export function SettingsForm({ settings }: Props) {
           </div>
           <div><label className={labelClass}>טקסט בתחתית קבלה</label><textarea value={form.receiptFooterText} onChange={e => set('receiptFooterText', e.target.value)} rows={2} className={inputClass} /></div>
         </div>
+
+        <div className="border-t border-brand-50 pt-4 space-y-3">
+          <h3 className="font-medium text-brand-800 text-sm">משימות</h3>
+          <div>
+            <label className={labelClass}>תזכורת לפני יעד המשימה</label>
+            <div className="flex gap-2">
+              {[{ v: 15, label: '15 דק׳' }, { v: 30, label: 'חצי שעה' }, { v: 60, label: 'שעה' }, { v: 120, label: '2 שעות' }].map(({ v, label }) => (
+                <button key={v} type="button"
+                  onClick={() => { set('taskReminderMinutes', v) }}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition touch-manipulation ${form.taskReminderMinutes === v ? 'bg-brand-500 text-white border-brand-500' : 'border-brand-200 text-brand-700 hover:bg-brand-50 active:bg-brand-100'}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {saved && <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-3 border border-green-100">✓ נשמר בהצלחה</div>}
         <button type="submit" disabled={loading} className="w-full py-3.5 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 disabled:bg-brand-300 text-white font-semibold rounded-xl transition touch-manipulation text-base">{loading ? 'שומרת...' : 'שמירת הגדרות'}</button>
       </form>
