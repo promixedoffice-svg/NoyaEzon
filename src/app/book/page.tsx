@@ -4,11 +4,13 @@ import { BookingPortal } from '@/components/BookingPortal'
 export const dynamic = 'force-dynamic'
 
 export default async function BookPage() {
-  const [settings, treatments, workHours, availSettings] = await Promise.all([
+  const now = new Date()
+  const [settings, treatments, workHours, availSettings, blockedTimes] = await Promise.all([
     prisma.businessSettings.findFirst(),
     prisma.treatment.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
     prisma.workHours.findMany({ orderBy: { dayOfWeek: 'asc' } }),
     prisma.availabilitySettings.findFirst(),
+    prisma.blockedTime.findMany({ where: { endAt: { gte: now } }, orderBy: { startAt: 'asc' } }),
   ])
 
   if (!treatments.length) {
@@ -31,6 +33,7 @@ export default async function BookPage() {
         workHours={workHours}
         minBookingHours={availSettings?.minBookingHours ?? 24}
         slotIntervalMinutes={availSettings?.slotIntervalMinutes ?? 15}
+        blockedTimes={blockedTimes.map(b => ({ id: b.id, startAt: b.startAt.toISOString(), endAt: b.endAt.toISOString(), reason: b.reason, isVacation: b.isVacation }))}
       />
     </div>
   )

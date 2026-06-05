@@ -8,11 +8,12 @@ import { cn, formatCurrency } from '@/lib/utils'
 
 interface Treatment { id: string; name: string; description: string | null; defaultPrice: number; durationMinutes: number; bufferMinutes: number; color: string }
 interface WorkHour { dayOfWeek: number; isWorking: boolean; startTime: string; endTime: string }
-interface Props { businessName: string; treatments: Treatment[]; workHours: WorkHour[]; minBookingHours: number; slotIntervalMinutes: number }
+interface BlockedTime { id: string; startAt: string; endAt: string; reason: string | null; isVacation: boolean }
+interface Props { businessName: string; treatments: Treatment[]; workHours: WorkHour[]; minBookingHours: number; slotIntervalMinutes: number; blockedTimes?: BlockedTime[] }
 
 type Step = 'treatment' | 'date' | 'time' | 'info' | 'success'
 
-export function BookingPortal({ businessName, treatments, workHours, minBookingHours }: Props) {
+export function BookingPortal({ businessName, treatments, workHours, minBookingHours, blockedTimes = [] }: Props) {
   const [step, setStep] = useState<Step>('treatment')
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -31,6 +32,13 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
   function isWorkingDay(date: Date) {
     const wh = workHours.find(w => w.dayOfWeek === getDay(date))
     return wh?.isWorking ?? false
+  }
+
+  // Returns the blocking record if the ENTIRE day is blocked
+  function getFullDayBlock(date: Date): BlockedTime | null {
+    const d0 = startOfDay(date)
+    const d1 = new Date(d0.getTime() + 24 * 3600 * 1000 - 1000) // 23:59:59
+    return blockedTimes.find(bt => new Date(bt.startAt) <= d0 && new Date(bt.endAt) >= d1) ?? null
   }
 
   // Fetch real available slots when date+treatment selected
@@ -228,19 +236,39 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
                 const working = isWorkingDay(day)
                 const isPast = isBefore(day, startOfDay(minDate))
                 const isSelected = selectedDate && format(day,'yyyy-MM-dd') === format(selectedDate,'yyyy-MM-dd')
+                const fullBlock = getFullDayBlock(day)
+                const disabled = !working || isPast || !!fullBlock
                 return (
-                  <button key={day.toISOString()} disabled={!working || isPast}
+                  <button
+                    key={day.toISOString()}
+                    disabled={disabled}
                     onClick={() => { setSelectedDate(day); setAvailableSlots([]); setStep('time') }}
-                    className={cn('h-10 rounded-xl text-sm font-medium transition',
+                    title={fullBlock?.reason ? fullBlock.reason : fullBlock ? (fullBlock.isVacation ? 'יום חופש' : 'לא זמין') : undefined}
+                    className={cn('relative h-10 rounded-xl text-sm font-medium transition',
                       isSelected ? 'bg-brand-500 text-white' :
+                      fullBlock ? 'bg-red-50 text-red-300 cursor-not-allowed' :
                       working && !isPast ? 'hover:bg-brand-100 text-brand-900' :
                       'text-gray-300 cursor-not-allowed'
                     )}>
                     {format(day, 'd')}
+                    {fullBlock && (
+                      <span className="absolute bottom-0.5 right-0 left-0 flex justify-center text-[8px] leading-none text-red-400">
+                        {fullBlock.isVacation ? '🏖️' : '🔒'}
+                      </span>
+                    )}
                   </button>
                 )
               })}
             </div>
+
+            {/* Legend for blocked days */}
+            {calendarDays.some(d => !!getFullDayBlock(d)) && (
+              <div className="mt-3 flex items-center gap-2 text-xs text-muted bg-red-50 rounded-xl px-3 py-2">
+                <span>🔒</span>
+                <span>ימים עם אייקון אינם זמינים להזמנה</span>
+              </div>
+            )}
+
             <button onClick={() => setStep('treatment')} className="mt-4 text-sm text-muted hover:text-brand-600 transition w-full text-center">← חזרה</button>
           </div>
         )}

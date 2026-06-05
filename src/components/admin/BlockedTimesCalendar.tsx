@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, getDay } from 'date-fns'
+import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, getDay, parseISO } from 'date-fns'
 import { he } from 'date-fns/locale'
-import { ChevronRight, ChevronLeft, X, Lock, Trash2 } from 'lucide-react'
+import { ChevronRight, ChevronLeft, X, Lock, Trash2, Pencil } from 'lucide-react'
 
 // Grid range: 08:00 – 21:00 in 30-min slots
 const H_START = 8
@@ -28,6 +28,8 @@ export function BlockedTimesCalendar() {
   const [saving, setSaving] = useState(false)
   const [clickedBlock, setClickedBlock] = useState<BlockedTime | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [editingBlock, setEditingBlock] = useState<BlockedTime | null>(null)
+  const [editForm, setEditForm] = useState({ date: '', startTime: '', endTime: '', reason: '', isVacation: false })
 
   // Drag state via refs (avoids stale closures in global listeners)
   const [selection, setSelection] = useState<{ dayIdx: number; lo: number; hi: number } | null>(null)
@@ -155,7 +157,41 @@ export function BlockedTimesCalendar() {
     setClickedBlock(null)
   }
 
+  function openEdit(bt: BlockedTime) {
+    const start = parseISO(bt.startAt)
+    const end = parseISO(bt.endAt)
+    setEditForm({
+      date: format(start, 'yyyy-MM-dd'),
+      startTime: format(start, 'HH:mm'),
+      endTime: format(end, 'HH:mm'),
+      reason: bt.reason ?? '',
+      isVacation: bt.isVacation,
+    })
+    setEditingBlock(bt)
+    setClickedBlock(null)
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingBlock) return
+    setSaving(true)
+    // Delete old, create new
+    await fetch(`/api/blocked-times/${editingBlock.id}`, { method: 'DELETE' })
+    const startAt = new Date(`${editForm.date}T${editForm.startTime}:00`)
+    const endAt = new Date(`${editForm.date}T${editForm.endTime}:00`)
+    const res = await fetch('/api/blocked-times', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startAt: startAt.toISOString(), endAt: endAt.toISOString(), reason: editForm.reason || null, isVacation: editForm.isVacation }),
+    })
+    const data = await res.json()
+    setBlocked(prev => [...prev.filter(b => b.id !== editingBlock.id), data].sort((a, b) => +new Date(a.startAt) - +new Date(b.startAt)))
+    setSaving(false)
+    setEditingBlock(null)
+  }
+
   const inputClass = "w-full px-3 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition"
+  const labelClass = "block text-xs font-medium text-brand-700 mb-1"
 
   return (
     <div className="space-y-4">
@@ -282,7 +318,7 @@ export function BlockedTimesCalendar() {
         </div>
       </div>
 
-      {/* Clicked block popup — show as modal */}
+      {/* Clicked block popup */}
       {clickedBlock && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setClickedBlock(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-5 space-y-3" onClick={e => e.stopPropagation()}>
@@ -294,19 +330,76 @@ export function BlockedTimesCalendar() {
                 {clickedBlock.reason && <p className="text-sm text-muted mt-0.5">{clickedBlock.reason}</p>}
                 <p className="text-xs text-muted mt-1">
                   {format(new Date(clickedBlock.startAt), 'EEEE d MMMM, HH:mm', { locale: he })}
-                  {' '}&ndash;{' '}
+                  {' – '}
                   {format(new Date(clickedBlock.endAt), 'HH:mm')}
                 </p>
               </div>
               <button onClick={() => setClickedBlock(null)} className="p-1 rounded-lg hover:bg-brand-50 text-muted shrink-0"><X size={16} /></button>
             </div>
-            <button
-              onClick={() => handleDelete(clickedBlock.id)}
-              disabled={deletingId === clickedBlock.id}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-50 font-medium rounded-xl transition text-sm"
-            >
-              <Trash2 size={14} /> {deletingId === clickedBlock.id ? 'מוחק...' : 'מחיקת חסימה'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => openEdit(clickedBlock)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-700 font-medium rounded-xl transition text-sm"
+              >
+                <Pencil size={13} /> עריכה
+              </button>
+              <button
+                onClick={() => handleDelete(clickedBlock.id)}
+                disabled={deletingId === clickedBlock.id}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-50 font-medium rounded-xl transition text-sm"
+              >
+                <Trash2 size={13} /> {deletingId === clickedBlock.id ? 'מוחק...' : 'מחיקה'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {editingBlock && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40" onClick={() => setEditingBlock(null)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="sm:hidden flex justify-center -mt-2 mb-1">
+              <div className="w-10 h-1 bg-gray-200 rounded-full" />
+            </div>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-brand-900">עריכת חסימה</h3>
+              <button onClick={() => setEditingBlock(null)} className="p-1 rounded-lg hover:bg-brand-50 text-muted"><X size={16} /></button>
+            </div>
+            <form onSubmit={handleEditSave} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-brand-700 mb-1">תאריך</label>
+                <input type="date" required value={editForm.date} onChange={e => setEditForm(p => ({ ...p, date: e.target.value }))} className={inputClass} dir="ltr" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-brand-700 mb-1">משעה</label>
+                  <input type="time" required value={editForm.startTime} onChange={e => setEditForm(p => ({ ...p, startTime: e.target.value }))} className={inputClass} dir="ltr" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-brand-700 mb-1">עד שעה</label>
+                  <input type="time" required value={editForm.endTime} onChange={e => setEditForm(p => ({ ...p, endTime: e.target.value }))} className={inputClass} dir="ltr" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-brand-700 mb-1">סיבה (אופציונלי)</label>
+                <input value={editForm.reason} onChange={e => setEditForm(p => ({ ...p, reason: e.target.value }))} className={inputClass} placeholder="חופשה, הכשרה..." />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={editForm.isVacation} onChange={e => setEditForm(p => ({ ...p, isVacation: e.target.checked }))} className="w-4 h-4 rounded accent-brand-500" />
+                <span className="text-sm text-brand-800">חופשה / יום חופש</span>
+              </label>
+              <div className="flex gap-2 pt-1">
+                <button type="submit" disabled={saving}
+                  className="flex-1 py-2.5 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-medium rounded-xl transition text-sm">
+                  {saving ? 'שומרת...' : 'שמרי שינויים'}
+                </button>
+                <button type="button" onClick={() => setEditingBlock(null)}
+                  className="px-4 py-2.5 border border-brand-200 text-brand-700 hover:bg-brand-50 rounded-xl transition text-sm">
+                  ביטול
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
