@@ -60,9 +60,7 @@ export function Sidebar() {
   }
 
   // Highlight the "More" button when on any secondary page
-  const isMoreActive = moreItems.some(item =>
-    item.exact ? pathname === item.href : pathname.startsWith(item.href)
-  )
+  const isMoreActive = moreItems.some(item => pathname.startsWith(item.href))
 
   return (
     <>
