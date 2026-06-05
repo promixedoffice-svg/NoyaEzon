@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
-  LayoutDashboard, Calendar, Users, Scissors, CreditCard,
+  LayoutDashboard, Calendar, Users, Scissors,
   AlertCircle, Receipt, BarChart2, Settings, LogOut, Megaphone, TrendingDown
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -15,7 +15,6 @@ const navItems = [
   { href: '/admin/calendar', label: 'יומן', icon: Calendar },
   { href: '/admin/clients', label: 'לקוחות', icon: Users },
   { href: '/admin/treatments', label: 'טיפולים', icon: Scissors },
-  { href: '/admin/payments', label: 'תשלומים', icon: CreditCard },
   { href: '/admin/debts', label: 'חובות', icon: AlertCircle },
   { href: '/admin/receipts', label: 'קבלות', icon: Receipt },
   { href: '/admin/reports', label: 'דוחות', icon: BarChart2 },
@@ -29,7 +28,7 @@ const bottomNavItems = [
   { href: '/admin', label: 'בקרה', icon: LayoutDashboard, exact: true },
   { href: '/admin/calendar', label: 'יומן', icon: Calendar },
   { href: '/admin/clients', label: 'לקוחות', icon: Users },
-  { href: '/admin/payments', label: 'תשלומים', icon: CreditCard },
+  { href: '/admin/receipts', label: 'קבלות', icon: Receipt },
   { href: '/admin/settings', label: 'הגדרות', icon: Settings },
 ]
 
