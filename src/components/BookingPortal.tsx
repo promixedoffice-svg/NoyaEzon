@@ -34,10 +34,13 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
     return wh?.isWorking ?? false
   }
 
-  // Returns the blocking record if the ENTIRE day is blocked
+  // Returns the blocking record if the ENTIRE day is blocked.
+  // Uses UTC-naive comparison to match how blocks are stored.
   function getFullDayBlock(date: Date): BlockedTime | null {
-    const d0 = startOfDay(date)
-    const d1 = new Date(d0.getTime() + 24 * 3600 * 1000 - 1000) // 23:59:59
+    const str = format(date, 'yyyy-MM-dd')
+    const [y, mo, d] = str.split('-').map(Number)
+    const d0 = new Date(Date.UTC(y, mo - 1, d, 0, 0, 0, 0))
+    const d1 = new Date(Date.UTC(y, mo - 1, d, 23, 59, 0, 0))
     return blockedTimes.find(bt => new Date(bt.startAt) <= d0 && new Date(bt.endAt) >= d1) ?? null
   }
 
