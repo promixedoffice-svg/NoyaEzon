@@ -151,12 +151,12 @@ export function BookingFab() {
         </div>
       </div>
 
-      {showModal && treatments.length > 0 && (
+      {showModal && (
         <AppointmentModal
           treatments={treatments}
           clients={clients}
           onClose={() => setShowModal(false)}
-          onSaved={() => setShowModal(false)}
+          onSaved={() => { setShowModal(false); setTreatments([]); setClients([]) }}
         />
       )}
     </>

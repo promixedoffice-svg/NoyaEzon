@@ -8,11 +8,13 @@ import { ReceiptRowActions } from '@/components/admin/ReceiptRowActions'
 export default async function ReceiptsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ show?: string }>
+  searchParams: Promise<{ show?: string; new?: string; clientId?: string; clientName?: string; service?: string; amount?: string }>
 }) {
-  const { show } = await searchParams
+  const { show, new: isNew, clientId, clientName, service, amount } = await searchParams
   const showDeleted = show === 'deleted'
   const showCancelled = show === 'cancelled'
+
+  const prefill = isNew === '1' ? { clientId, clientName, service, amount } : null
 
   const [receipts, activeCount, cancelledCount, deletedCount, clients] = await Promise.all([
     prisma.receipt.findMany({
@@ -35,7 +37,7 @@ export default async function ReceiptsPage({
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-brand-900">קבלות</h1>
-        <ReceiptsPageClient clients={clients} />
+        <ReceiptsPageClient clients={clients} prefill={prefill} />
       </div>
 
       {/* Tabs */}

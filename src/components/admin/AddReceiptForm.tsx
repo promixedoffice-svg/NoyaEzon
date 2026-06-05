@@ -6,20 +6,36 @@ import { X } from 'lucide-react'
 
 interface Client { id: string; fullName: string }
 
-export function AddReceiptForm({ clients, onClose }: { clients: Client[]; onClose: () => void }) {
+interface DefaultValues {
+  clientId?: string
+  clientName?: string
+  service?: string
+  amount?: string
+}
+
+export function AddReceiptForm({
+  clients,
+  defaultValues,
+  onClose,
+}: {
+  clients: Client[]
+  defaultValues?: DefaultValues | null
+  onClose: () => void
+}) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
-    clientId: '',
-    serviceDescription: '',
-    amount: '',
+    clientId: defaultValues?.clientId ?? '',
+    serviceDescription: defaultValues?.service ?? '',
+    amount: defaultValues?.amount ?? '',
     method: 'cash' as const,
   })
 
   function set(field: string, value: string) { setForm(p => ({ ...p, [field]: value })) }
 
   const selectedClient = clients.find(c => c.id === form.clientId)
+  const clientName = selectedClient?.fullName ?? defaultValues?.clientName ?? ''
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -34,13 +50,13 @@ export function AddReceiptForm({ clients, onClose }: { clients: Client[]; onClos
         serviceDescription: form.serviceDescription,
         amount: parseFloat(form.amount),
         method: form.method,
-        clientName: selectedClient?.fullName ?? '',
+        clientName,
       }),
     })
 
     setLoading(false)
     if (!res.ok) { setError('שגיאה בהפקת קבלה'); return }
-    router.refresh()
+    router.push('/admin/receipts')
     onClose()
   }
 
@@ -49,11 +65,11 @@ export function AddReceiptForm({ clients, onClose }: { clients: Client[]; onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="sm:hidden flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-brand-50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-brand-50 sticky top-0 bg-white z-10">
           <h2 className="font-bold text-brand-900">הפקת קבלה</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-brand-50 text-muted transition"><X size={18} /></button>
         </div>
@@ -67,14 +83,27 @@ export function AddReceiptForm({ clients, onClose }: { clients: Client[]; onClos
           </div>
           <div>
             <label className={labelClass}>תיאור שירות *</label>
-            <input value={form.serviceDescription} onChange={e => set('serviceDescription', e.target.value)} required
-              className={inputClass} placeholder="לק ג׳ל, מניקור..." />
+            <input
+              value={form.serviceDescription}
+              onChange={e => set('serviceDescription', e.target.value)}
+              required
+              className={inputClass}
+              placeholder="לק ג׳ל, מניקור..."
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>סכום (₪) *</label>
-              <input type="number" value={form.amount} onChange={e => set('amount', e.target.value)} required
-                className={inputClass} min="0" step="0.01" dir="ltr" />
+              <input
+                type="number"
+                value={form.amount}
+                onChange={e => set('amount', e.target.value)}
+                required
+                className={inputClass}
+                min="0"
+                step="0.01"
+                dir="ltr"
+              />
             </div>
             <div>
               <label className={labelClass}>אמצעי תשלום</label>
@@ -89,7 +118,7 @@ export function AddReceiptForm({ clients, onClose }: { clients: Client[]; onClos
             </div>
           </div>
           {error && <div className="bg-red-50 text-red-700 text-sm rounded-xl px-4 py-3 border border-red-100">{error}</div>}
-          <div className="flex gap-3">
+          <div className="flex gap-3 pt-1">
             <button type="submit" disabled={loading} className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold rounded-xl transition">
               {loading ? 'מפיקה...' : 'הפקת קבלה'}
             </button>
