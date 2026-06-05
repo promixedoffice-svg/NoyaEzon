@@ -67,6 +67,24 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
 
         <div className="border-t border-brand-50 pt-4 space-y-4">
           <h3 className="font-medium text-brand-800 text-sm">הגדרות הזמנה</h3>
+
+          {/* Slot interval */}
+          <div>
+            <label className="block text-sm font-medium text-brand-800 mb-2">קפיצות זמן בין תורים</label>
+            <div className="flex gap-2">
+              {[{ v: 15, label: 'רבע שעה' }, { v: 30, label: 'חצי שעה' }, { v: 60, label: 'שעה' }].map(({ v, label }) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => { setAvail(p => ({ ...p, slotIntervalMinutes: v })); setSaved(false) }}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition ${avail.slotIntervalMinutes === v ? 'bg-brand-500 text-white border-brand-500' : 'border-brand-200 text-brand-700 hover:bg-brand-50'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-brand-800 mb-1.5">מינימום שעות מראש</label>

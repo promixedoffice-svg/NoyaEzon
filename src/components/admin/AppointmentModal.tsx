@@ -101,6 +101,7 @@ export function AppointmentModal({ treatments, clients, defaultTime, onClose, on
     })
 
     setLoading(false)
+    if (res.status === 409) { setError('יש תור קיים בשעה זו — בחרי שעה אחרת'); return }
     if (!res.ok) { setError('שגיאה ביצירת תור'); return }
 
     setSaved({

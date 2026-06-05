@@ -55,6 +55,20 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Reject if there is already a confirmed/pending appointment that overlaps
+  const conflict = await prisma.appointment.findFirst({
+    where: {
+      status: { in: ['pending', 'confirmed'] },
+      AND: [
+        { startAt: { lt: new Date(body.endAt) } },
+        { endAt:   { gt: new Date(body.startAt) } },
+      ],
+    },
+  })
+  if (conflict) {
+    return NextResponse.json({ error: 'conflict', message: 'יש תור קיים בשעה זו' }, { status: 409 })
+  }
+
   const appointment = await prisma.appointment.create({
     data: {
       clientId,
