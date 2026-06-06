@@ -45,22 +45,47 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
     <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 sm:p-6">
       <h2 className="font-semibold text-brand-900 mb-5">שעות עבודה וזמינות</h2>
       <form onSubmit={handleSave} className="space-y-5">
-        <div className="space-y-3">
+        <div className="space-y-2">
           {hours.map(h => (
-            <div key={h.dayOfWeek} className="flex items-center gap-3">
-              <div className="w-16 sm:w-20 shrink-0">
-                <label className="flex items-center gap-2 cursor-pointer touch-manipulation">
-                  <input type="checkbox" checked={h.isWorking} onChange={e => updateDay(h.dayOfWeek, 'isWorking', e.target.checked)} className="w-5 h-5 rounded accent-brand-500" />
-                  <span className="text-sm font-medium text-brand-800">{dayOfWeekLabel(String(h.dayOfWeek))}</span>
-                </label>
-              </div>
-              {h.isWorking ? (
-                <div className="flex items-center gap-2 flex-1">
-                  <input type="time" value={h.startTime} onChange={e => updateDay(h.dayOfWeek, 'startTime', e.target.value)} className={`${inputClass} flex-1 min-w-0`} dir="ltr" />
-                  <span className="text-muted text-sm shrink-0">—</span>
-                  <input type="time" value={h.endTime} onChange={e => updateDay(h.dayOfWeek, 'endTime', e.target.value)} className={`${inputClass} flex-1 min-w-0`} dir="ltr" />
+            <div key={h.dayOfWeek} className="rounded-xl border border-brand-100 bg-brand-50/40 px-4 py-3">
+              {/* Day toggle row */}
+              <label className="flex items-center gap-3 cursor-pointer touch-manipulation">
+                <input
+                  type="checkbox"
+                  checked={h.isWorking}
+                  onChange={e => updateDay(h.dayOfWeek, 'isWorking', e.target.checked)}
+                  className="w-5 h-5 rounded accent-brand-500 shrink-0"
+                />
+                <span className="font-medium text-brand-900 text-sm flex-1">{dayOfWeekLabel(String(h.dayOfWeek))}</span>
+                {!h.isWorking && <span className="text-xs text-muted bg-gray-100 px-2 py-1 rounded-lg">סגור</span>}
+              </label>
+
+              {/* Times row — shown only when working */}
+              {h.isWorking && (
+                <div className="flex items-center gap-2 mt-3">
+                  <div className="flex-1">
+                    <p className="text-xs text-muted mb-1">משעה</p>
+                    <input
+                      type="time"
+                      value={h.startTime}
+                      onChange={e => updateDay(h.dayOfWeek, 'startTime', e.target.value)}
+                      className={inputClass}
+                      dir="ltr"
+                    />
+                  </div>
+                  <span className="text-muted text-lg mt-5 shrink-0">—</span>
+                  <div className="flex-1">
+                    <p className="text-xs text-muted mb-1">עד שעה</p>
+                    <input
+                      type="time"
+                      value={h.endTime}
+                      onChange={e => updateDay(h.dayOfWeek, 'endTime', e.target.value)}
+                      className={inputClass}
+                      dir="ltr"
+                    />
+                  </div>
                 </div>
-              ) : <span className="text-sm text-muted">סגור</span>}
+              )}
             </div>
           ))}
         </div>

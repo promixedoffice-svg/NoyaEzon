@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { requireAuth } from '@/lib/auth'
 import { Sidebar } from '@/components/admin/Sidebar'
 import { BookingFab } from '@/components/admin/BookingFab'
+import { TodayTasksBanner } from '@/components/admin/TodayTasksBanner'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </main>
       <BookingFab />
+      <TodayTasksBanner />
     </div>
   )
 }
