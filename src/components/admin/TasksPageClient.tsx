@@ -65,10 +65,12 @@ export function TasksPageClient({ initialTasks, initialDeleted, reminderMinutes 
         if (minsLeft <= reminderMinutes && minsLeft >= -5) {
           notifiedRef.current.add(task.id)
           localStorage.setItem('task_notified', JSON.stringify([...notifiedRef.current]))
-          new Notification('💅 משימה לביצוע', {
-            body: minsLeft <= 0 ? `⏰ "${task.title}" — פג המועד!` : `"${task.title}" — עוד ${minsLeft} דקות`,
-            icon: '/favicon.ico',
-          })
+          if (localStorage.getItem('notifications_paused') !== '1') {
+            new Notification('💅 משימה לביצוע', {
+              body: minsLeft <= 0 ? `⏰ "${task.title}" — פג המועד!` : `"${task.title}" — עוד ${minsLeft} דקות`,
+              icon: '/favicon.ico',
+            })
+          }
         }
       })
     }

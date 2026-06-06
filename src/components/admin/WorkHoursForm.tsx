@@ -39,70 +39,70 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
     setLoading(false); setSaved(true); router.refresh()
   }
 
-  const inputClass = "px-3 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition touch-manipulation"
+  const timeInputClass = "w-full px-3 py-2 rounded-xl border border-brand-200 bg-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition touch-manipulation"
+  const numInputClass = "w-full px-3 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition touch-manipulation"
 
   return (
     <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 sm:p-6">
-      <h2 className="font-semibold text-brand-900 mb-5">שעות עבודה וזמינות</h2>
-      <form onSubmit={handleSave} className="space-y-5">
-        <div className="space-y-2">
+      <h2 className="font-semibold text-brand-900 mb-4">שעות עבודה וזמינות</h2>
+      <form onSubmit={handleSave} className="space-y-4">
+
+        {/* Days list */}
+        <div className="space-y-1">
           {hours.map(h => (
-            <div key={h.dayOfWeek} className="rounded-xl border border-brand-100 bg-brand-50/40 px-4 py-3">
-              {/* Day toggle row */}
-              <label className="flex items-center gap-3 cursor-pointer touch-manipulation">
+            h.isWorking ? (
+              /* Working day — compact card */
+              <div key={h.dayOfWeek} className="rounded-xl border border-brand-100 bg-brand-50/40 px-3 py-2.5">
+                <label className="flex items-center gap-2.5 cursor-pointer touch-manipulation">
+                  <input
+                    type="checkbox"
+                    checked={h.isWorking}
+                    onChange={e => updateDay(h.dayOfWeek, 'isWorking', e.target.checked)}
+                    className="w-4 h-4 rounded accent-brand-500 shrink-0"
+                  />
+                  <span className="font-medium text-brand-900 text-sm flex-1">{dayOfWeekLabel(String(h.dayOfWeek))}</span>
+                </label>
+                <div className="flex items-end gap-2 mt-2">
+                  <div className="flex-1">
+                    <p className="text-xs text-muted mb-1">משעה</p>
+                    <input type="time" value={h.startTime} onChange={e => updateDay(h.dayOfWeek, 'startTime', e.target.value)} className={timeInputClass} dir="ltr" />
+                  </div>
+                  <span className="text-muted text-base mb-2 shrink-0">—</span>
+                  <div className="flex-1">
+                    <p className="text-xs text-muted mb-1">עד שעה</p>
+                    <input type="time" value={h.endTime} onChange={e => updateDay(h.dayOfWeek, 'endTime', e.target.value)} className={timeInputClass} dir="ltr" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Closed day — slim row */
+              <label key={h.dayOfWeek} className="flex items-center gap-2.5 px-1 py-1.5 cursor-pointer touch-manipulation">
                 <input
                   type="checkbox"
                   checked={h.isWorking}
                   onChange={e => updateDay(h.dayOfWeek, 'isWorking', e.target.checked)}
-                  className="w-5 h-5 rounded accent-brand-500 shrink-0"
+                  className="w-4 h-4 rounded accent-brand-500 shrink-0"
                 />
-                <span className="font-medium text-brand-900 text-sm flex-1">{dayOfWeekLabel(String(h.dayOfWeek))}</span>
-                {!h.isWorking && <span className="text-xs text-muted bg-gray-100 px-2 py-1 rounded-lg">סגור</span>}
+                <span className="text-sm text-muted flex-1">{dayOfWeekLabel(String(h.dayOfWeek))}</span>
+                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">סגור</span>
               </label>
-
-              {/* Times row — shown only when working */}
-              {h.isWorking && (
-                <div className="flex items-center gap-2 mt-3">
-                  <div className="flex-1">
-                    <p className="text-xs text-muted mb-1">משעה</p>
-                    <input
-                      type="time"
-                      value={h.startTime}
-                      onChange={e => updateDay(h.dayOfWeek, 'startTime', e.target.value)}
-                      className={inputClass}
-                      dir="ltr"
-                    />
-                  </div>
-                  <span className="text-muted text-lg mt-5 shrink-0">—</span>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted mb-1">עד שעה</p>
-                    <input
-                      type="time"
-                      value={h.endTime}
-                      onChange={e => updateDay(h.dayOfWeek, 'endTime', e.target.value)}
-                      className={inputClass}
-                      dir="ltr"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+            )
           ))}
         </div>
 
-        <div className="border-t border-brand-50 pt-4 space-y-4">
+        {/* Booking settings */}
+        <div className="border-t border-brand-50 pt-3 space-y-3">
           <h3 className="font-medium text-brand-800 text-sm">הגדרות הזמנה</h3>
 
-          {/* Slot interval */}
           <div>
-            <label className="block text-sm font-medium text-brand-800 mb-2">קפיצות זמן בין תורים</label>
+            <label className="block text-xs font-medium text-brand-700 mb-1.5">קפיצות זמן בין תורים</label>
             <div className="flex gap-2">
               {[{ v: 15, label: 'רבע שעה' }, { v: 30, label: 'חצי שעה' }, { v: 60, label: 'שעה' }].map(({ v, label }) => (
                 <button
                   key={v}
                   type="button"
                   onClick={() => { setAvail(p => ({ ...p, slotIntervalMinutes: v })); setSaved(false) }}
-                  className={`flex-1 py-3 sm:py-2.5 rounded-xl text-sm font-medium border transition touch-manipulation ${avail.slotIntervalMinutes === v ? 'bg-brand-500 text-white border-brand-500' : 'border-brand-200 text-brand-700 hover:bg-brand-50 active:bg-brand-100'}`}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition touch-manipulation ${avail.slotIntervalMinutes === v ? 'bg-brand-500 text-white border-brand-500' : 'border-brand-200 text-brand-700 hover:bg-brand-50 active:bg-brand-100'}`}
                 >
                   {label}
                 </button>
@@ -110,20 +110,20 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-brand-800 mb-1.5">מינימום שעות מראש</label>
-              <input type="number" value={avail.minBookingHours} onChange={e => setAvail(p => ({ ...p, minBookingHours: parseInt(e.target.value)||24 }))} className="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-50 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition touch-manipulation" min="1" dir="ltr" inputMode="numeric" />
+              <label className="block text-xs font-medium text-brand-700 mb-1.5">מינ׳ שעות מראש</label>
+              <input type="number" value={avail.minBookingHours} onChange={e => setAvail(p => ({ ...p, minBookingHours: parseInt(e.target.value)||24 }))} className={numInputClass} min="1" dir="ltr" inputMode="numeric" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-brand-800 mb-1.5">מקסימום תורים ביום</label>
-              <input type="number" value={avail.maxAppointmentsPerDay ?? ''} onChange={e => setAvail(p => ({ ...p, maxAppointmentsPerDay: e.target.value ? parseInt(e.target.value) : null }))} className="w-full px-4 py-3 rounded-xl border border-brand-200 bg-brand-50 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition touch-manipulation" min="1" dir="ltr" inputMode="numeric" placeholder="ללא הגבלה" />
+              <label className="block text-xs font-medium text-brand-700 mb-1.5">מקס׳ תורים ביום</label>
+              <input type="number" value={avail.maxAppointmentsPerDay ?? ''} onChange={e => setAvail(p => ({ ...p, maxAppointmentsPerDay: e.target.value ? parseInt(e.target.value) : null }))} className={numInputClass} min="1" dir="ltr" inputMode="numeric" placeholder="ללא הגבלה" />
             </div>
           </div>
         </div>
 
         {saved && <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-3 border border-green-100">✓ נשמר בהצלחה</div>}
-        <button type="submit" disabled={loading} className="w-full py-3.5 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 disabled:bg-brand-300 text-white font-semibold rounded-xl transition touch-manipulation text-base">{loading ? 'שומרת...' : 'שמירת שעות עבודה'}</button>
+        <button type="submit" disabled={loading} className="w-full py-3 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 disabled:bg-brand-300 text-white font-semibold rounded-xl transition touch-manipulation text-base">{loading ? 'שומרת...' : 'שמירת שעות עבודה'}</button>
       </form>
     </div>
   )

@@ -23,7 +23,12 @@ export function NotificationBell() {
           setTimeout(() => setPulse(false), 2000)
 
           // Browser notification
-          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          if (
+            typeof window !== 'undefined' &&
+            'Notification' in window &&
+            Notification.permission === 'granted' &&
+            localStorage.getItem('notifications_paused') !== '1'
+          ) {
             new Notification('💅 NoyaGayaEzon', {
               body: `${newCount} בקשת תור ממתינה לאישור`,
               icon: '/favicon.ico',
