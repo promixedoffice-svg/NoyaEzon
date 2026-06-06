@@ -4,7 +4,8 @@ import { WorkHoursForm } from '@/components/admin/WorkHoursForm'
 import { BlockedTimesCalendar } from '@/components/admin/BlockedTimesCalendar'
 import { NotificationSettings } from '@/components/admin/NotificationSettings'
 import { FabSettings } from '@/components/admin/FabSettings'
-import { Bell, Smartphone } from 'lucide-react'
+import { NavOrderSettings } from '@/components/admin/NavOrderSettings'
+import { Bell, Smartphone, LayoutGrid } from 'lucide-react'
 
 export default async function SettingsPage() {
   const [settings, workHours, availSettings] = await Promise.all([
@@ -31,6 +32,14 @@ export default async function SettingsPage() {
           <Smartphone size={16} /> מובייל
         </h2>
         <FabSettings />
+      </div>
+
+      {/* Nav order */}
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 sm:p-6">
+        <h2 className="font-semibold text-brand-900 mb-4 flex items-center gap-2">
+          <LayoutGrid size={16} /> סדר ניווט
+        </h2>
+        <NavOrderSettings />
       </div>
 
       <SettingsForm settings={settings} />

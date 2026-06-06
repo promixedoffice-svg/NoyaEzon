@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -11,44 +11,54 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { NotificationBell } from './NotificationBell'
+import { ALL_NAV_ITEMS, NAV_STORAGE_KEY, DEFAULT_BOTTOM, DEFAULT_MORE } from './NavOrderSettings'
 
-const navItems = [
-  { href: '/admin', label: 'בקרה', icon: LayoutDashboard, exact: true },
-  { href: '/admin/calendar', label: 'יומן', icon: Calendar },
-  { href: '/admin/clients', label: 'לקוחות', icon: Users },
-  { href: '/admin/tasks', label: 'משימות', icon: ListTodo },
+// Desktop sidebar always shows all items in fixed order
+const ALL_ITEMS_ORDERED = [
+  { href: '/admin',            label: 'בקרה',    icon: LayoutDashboard, exact: true },
+  { href: '/admin/calendar',   label: 'יומן',    icon: Calendar },
+  { href: '/admin/clients',    label: 'לקוחות',  icon: Users },
+  { href: '/admin/tasks',      label: 'משימות',  icon: ListTodo },
   { href: '/admin/treatments', label: 'טיפולים', icon: Scissors },
-  { href: '/admin/debts', label: 'חובות', icon: AlertCircle },
-  { href: '/admin/receipts', label: 'קבלות', icon: Receipt },
-  { href: '/admin/reports', label: 'דוחות', icon: BarChart2 },
-  { href: '/admin/expenses', label: 'הוצאות', icon: TrendingDown },
-  { href: '/admin/broadcast', label: 'תפוצה', icon: Megaphone },
-  { href: '/admin/settings', label: 'הגדרות', icon: Settings },
+  { href: '/admin/debts',      label: 'חובות',   icon: AlertCircle },
+  { href: '/admin/receipts',   label: 'קבלות',   icon: Receipt },
+  { href: '/admin/reports',    label: 'דוחות',   icon: BarChart2 },
+  { href: '/admin/expenses',   label: 'הוצאות',  icon: TrendingDown },
+  { href: '/admin/broadcast',  label: 'תפוצה',   icon: Megaphone },
+  { href: '/admin/settings',   label: 'הגדרות',  icon: Settings },
 ]
 
-// 4 always-visible items in the bottom bar
-const primaryBottomItems = [
-  { href: '/admin', label: 'בקרה', icon: LayoutDashboard, exact: true },
-  { href: '/admin/calendar', label: 'יומן', icon: Calendar },
-  { href: '/admin/tasks', label: 'משימות', icon: ListTodo },
-  { href: '/admin/clients', label: 'לקוחות', icon: Users },
-]
+const NAV_MAP = Object.fromEntries(ALL_NAV_ITEMS.map(i => [i.href, i]))
 
-// All remaining items appear in the "More" drawer
-const moreItems = [
-  { href: '/admin/receipts', label: 'קבלות', icon: Receipt },
-  { href: '/admin/treatments', label: 'טיפולים', icon: Scissors },
-  { href: '/admin/debts', label: 'חובות', icon: AlertCircle },
-  { href: '/admin/reports', label: 'דוחות', icon: BarChart2 },
-  { href: '/admin/expenses', label: 'הוצאות', icon: TrendingDown },
-  { href: '/admin/broadcast', label: 'תפוצה', icon: Megaphone },
-  { href: '/admin/settings', label: 'הגדרות', icon: Settings },
-]
+function resolveItems(hrefs: string[]) {
+  return hrefs.map(h => NAV_MAP[h]).filter(Boolean)
+}
 
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [showMore, setShowMore] = useState(false)
+  const [bottomHrefs, setBottomHrefs] = useState<string[]>(DEFAULT_BOTTOM)
+  const [moreHrefs,   setMoreHrefs]   = useState<string[]>(DEFAULT_MORE)
+
+  useEffect(() => {
+    function load() {
+      try {
+        const raw = localStorage.getItem(NAV_STORAGE_KEY)
+        if (raw) {
+          const p = JSON.parse(raw)
+          setBottomHrefs(p.bottom ?? DEFAULT_BOTTOM)
+          setMoreHrefs(p.more   ?? DEFAULT_MORE)
+        }
+      } catch {}
+    }
+    load()
+    window.addEventListener('nav-order-changed', load)
+    return () => window.removeEventListener('nav-order-changed', load)
+  }, [])
+
+  const bottomItems = resolveItems(bottomHrefs)
+  const moreNavItems = resolveItems(moreHrefs)
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -61,8 +71,7 @@ export function Sidebar() {
     return pathname.startsWith(item.href)
   }
 
-  // Highlight the "More" button when on any secondary page
-  const isMoreActive = moreItems.some(item => pathname.startsWith(item.href))
+  const isMoreActive = moreNavItems.some(item => pathname.startsWith(item.href))
 
   return (
     <>
@@ -78,7 +87,7 @@ export function Sidebar() {
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <ul className="space-y-0.5">
-            {navItems.map(item => {
+            {ALL_ITEMS_ORDERED.map(item => {
               const active = isActive(item)
               return (
                 <li key={item.href}>
@@ -114,7 +123,7 @@ export function Sidebar() {
       {/* ── Mobile Bottom Navigation ── */}
       <nav className="lg:hidden fixed bottom-0 right-0 left-0 z-40 bg-white border-t border-brand-100 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] safe-bottom">
         <div className="flex items-center justify-around px-1 py-1">
-          {primaryBottomItems.map(item => {
+          {bottomItems.map(item => {
             const active = isActive(item)
             return (
               <Link key={item.href} href={item.href} className={cn(
@@ -129,7 +138,7 @@ export function Sidebar() {
             )
           })}
 
-          {/* "More" button */}
+          {/* "More" button — always visible */}
           <button
             onClick={() => setShowMore(true)}
             className={cn(
@@ -138,9 +147,7 @@ export function Sidebar() {
             )}
           >
             <MoreHorizontal size={22} strokeWidth={isMoreActive ? 2.5 : 1.8} />
-            <span className={cn('text-[10px] font-medium', isMoreActive ? 'text-brand-500' : 'text-muted')}>
-              עוד
-            </span>
+            <span className={cn('text-[10px] font-medium', isMoreActive ? 'text-brand-500' : 'text-muted')}>עוד</span>
           </button>
         </div>
       </nav>
@@ -155,12 +162,10 @@ export function Sidebar() {
             className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-10 h-1 bg-gray-200 rounded-full" />
             </div>
 
-            {/* Header */}
             <div className="flex items-center justify-between px-5 pb-3">
               <p className="font-semibold text-brand-900">תפריט</p>
               <button
@@ -171,9 +176,8 @@ export function Sidebar() {
               </button>
             </div>
 
-            {/* Grid of all secondary items */}
             <div className="grid grid-cols-3 gap-3 px-5 pb-4">
-              {moreItems.map(item => {
+              {moreNavItems.map(item => {
                 const active = isActive(item)
                 return (
                   <Link
@@ -194,7 +198,6 @@ export function Sidebar() {
               })}
             </div>
 
-            {/* Logout */}
             <div className="px-5 pb-8 pt-1 border-t border-brand-50">
               <button
                 onClick={() => { setShowMore(false); handleLogout() }}
