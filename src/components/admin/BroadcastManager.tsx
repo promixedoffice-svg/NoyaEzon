@@ -87,8 +87,6 @@ export function BroadcastManager({ clients }: { clients: Client[] }) {
               <a
                 key={client.id}
                 href={getWhatsAppLink(client)!}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="flex items-center gap-3 p-3 bg-green-50 hover:bg-green-100 rounded-xl transition border border-green-100 group"
               >
                 <div className="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold text-sm shrink-0">
