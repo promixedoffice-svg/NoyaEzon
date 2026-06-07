@@ -9,7 +9,7 @@ import { Bell, Smartphone, LayoutGrid } from 'lucide-react'
 
 export default async function SettingsPage() {
   const [settings, workHours, availSettings] = await Promise.all([
-    prisma.businessSettings.findFirst({ select: { id: true, businessName: true, ownerName: true, businessNumber: true, phone: true, email: true, address: true, receiptStartingNumber: true, receiptFooterText: true, taskReminderMinutes: true } }),
+    prisma.businessSettings.findFirst({ select: { id: true, businessName: true, ownerName: true, businessNumber: true, phone: true, email: true, address: true, logoUrl: true, receiptStartingNumber: true, receiptFooterText: true, taskReminderMinutes: true } }),
     prisma.workHours.findMany({ orderBy: { dayOfWeek: 'asc' } }),
     prisma.availabilitySettings.findFirst(),
   ])

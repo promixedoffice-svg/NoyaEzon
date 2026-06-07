@@ -23,7 +23,7 @@ export function NotificationSettings() {
     const result = await Notification.requestPermission()
     setPermission(result)
     if (result === 'granted') {
-      new Notification('💅 NoyaGayaEzon', { body: 'התראות הופעלו בהצלחה!' })
+      new Notification('💅 Calitor', { body: 'התראות הופעלו בהצלחה!' })
     }
   }
 

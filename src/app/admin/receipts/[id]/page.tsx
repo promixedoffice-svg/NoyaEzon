@@ -47,7 +47,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-2xl font-bold text-brand-900">
-              {settings?.businessName ?? 'NoyaGayaEzon'}
+              {settings?.businessName || 'העסק שלי'}
             </h1>
             {settings?.ownerName && <p className="text-muted text-sm">{settings.ownerName}</p>}
             {settings?.address && <p className="text-muted text-sm">{settings.address}</p>}

@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'NoyaGayaEzon | סטודיו לציפורניים',
-  description: 'מערכת ניהול מקצועית לסטודיו לק ג׳ל וציפורניים',
+  title: 'Calitor | מערכת ניהול עסק ותורים',
+  description: 'מערכת ניהול מקצועית לעסקים ועוסקים זעירים — תורים, לקוחות וקבלות',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

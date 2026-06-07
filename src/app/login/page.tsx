@@ -40,8 +40,8 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-brand-100 mb-4 shadow-sm">
             <span className="text-3xl">💅</span>
           </div>
-          <h1 className="text-3xl font-bold text-brand-900 tracking-tight">NoyaGayaEzon</h1>
-          <p className="text-muted mt-1 text-sm">סטודיו לק ג׳ל וציפורניים</p>
+          <h1 className="text-3xl font-bold text-brand-900 tracking-tight">Calitor</h1>
+          <p className="text-muted mt-1 text-sm">מערכת ניהול עסק ותורים</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-brand-100 p-8">
@@ -88,7 +88,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-muted mt-6">גרסה 1.0 · NoyaGayaEzon Studio Management</p>
+        <p className="text-center text-xs text-muted mt-6">גרסה 1.0 · Calitor Business Management</p>
       </div>
     </div>
   )

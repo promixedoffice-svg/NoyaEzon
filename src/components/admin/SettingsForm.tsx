@@ -2,28 +2,57 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Upload, Trash2 } from 'lucide-react'
 
 interface Props {
-  settings: { id: string; businessName: string; ownerName: string | null; businessNumber: string | null; phone: string | null; email: string | null; address: string | null; receiptStartingNumber: number; receiptFooterText: string | null; taskReminderMinutes?: number } | null
+  settings: { id: string; businessName: string; ownerName: string | null; businessNumber: string | null; phone: string | null; email: string | null; address: string | null; logoUrl?: string | null; receiptStartingNumber: number; receiptFooterText: string | null; taskReminderMinutes?: number } | null
 }
+
+const MAX_LOGO_BYTES = 800 * 1024
+const ACCEPTED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
 
 export function SettingsForm({ settings }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [logoError, setLogoError] = useState('')
   const [form, setForm] = useState({
-    businessName: settings?.businessName ?? 'NoyaGayaEzon',
+    businessName: settings?.businessName ?? '',
     ownerName: settings?.ownerName ?? '',
     businessNumber: settings?.businessNumber ?? '',
     phone: settings?.phone ?? '',
     email: settings?.email ?? '',
     address: settings?.address ?? '',
+    logoUrl: settings?.logoUrl ?? '',
     receiptStartingNumber: settings?.receiptStartingNumber ?? 1000,
     receiptFooterText: settings?.receiptFooterText ?? 'תודה על הביקור!',
     taskReminderMinutes: settings?.taskReminderMinutes ?? 30,
   })
 
   function set(field: string, value: string | number) { setForm(prev => ({ ...prev, [field]: value })); setSaved(false) }
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setLogoError('')
+    if (!ACCEPTED_LOGO_TYPES.includes(file.type)) {
+      setLogoError('יש להעלות קובץ תמונה בפורמט PNG, JPG, WEBP או SVG')
+      return
+    }
+    if (file.size > MAX_LOGO_BYTES) {
+      setLogoError('גודל הקובץ חייב להיות עד 800KB')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => set('logoUrl', reader.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  function removeLogo() {
+    set('logoUrl', '')
+    setLogoError('')
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault(); setLoading(true)
@@ -47,6 +76,36 @@ export function SettingsForm({ settings }: Props) {
           <div><label className={labelClass}>אימייל</label><input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={inputClass} dir="ltr" inputMode="email" /></div>
           <div><label className={labelClass}>כתובת</label><input value={form.address} onChange={e => set('address', e.target.value)} className={inputClass} /></div>
         </div>
+        <div className="border-t border-brand-50 pt-4 space-y-3">
+          <h3 className="font-medium text-brand-800 text-sm">לוגו העסק</h3>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl border border-brand-200 bg-brand-50 flex items-center justify-center overflow-hidden shrink-0">
+              {form.logoUrl ? (
+                <img src={form.logoUrl} alt="לוגו העסק" className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-2xl">💅</span>
+              )}
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-brand-200 text-brand-700 text-sm font-medium hover:bg-brand-50 active:bg-brand-100 cursor-pointer transition touch-manipulation">
+                  <Upload size={14} />
+                  {form.logoUrl ? 'החלפת לוגו' : 'העלאת לוגו'}
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={handleLogoChange} className="hidden" />
+                </label>
+                {form.logoUrl && (
+                  <button type="button" onClick={removeLogo} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-red-100 text-red-500 text-sm font-medium hover:bg-red-50 active:bg-red-100 transition touch-manipulation">
+                    <Trash2 size={14} />
+                    הסרה
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-muted">PNG / JPG / WEBP / SVG · עד 800KB · מומלץ ריבועי</p>
+              {logoError && <p className="text-xs text-red-500">{logoError}</p>}
+            </div>
+          </div>
+        </div>
+
         <div className="border-t border-brand-50 pt-4 space-y-4">
           <h3 className="font-medium text-brand-800 text-sm">קבלות</h3>
           <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">

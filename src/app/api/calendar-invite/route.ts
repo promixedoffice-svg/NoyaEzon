@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//NoyaGayaEzon//Studio//HE',
+    'PRODID:-//Calitor//Business//HE',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',

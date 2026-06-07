@@ -34,7 +34,13 @@ function resolveItems(hrefs: string[]) {
   return hrefs.map(h => NAV_MAP[h]).filter(Boolean)
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  businessName?: string | null
+  logoUrl?: string | null
+}
+
+export function Sidebar({ businessName, logoUrl }: SidebarProps) {
+  const displayName = businessName?.trim() || 'Calitor'
   const pathname = usePathname()
   const router = useRouter()
   const [showMore, setShowMore] = useState(false)
@@ -78,10 +84,12 @@ export function Sidebar() {
       {/* ── Desktop Sidebar ── */}
       <aside className="hidden lg:flex flex-col w-60 bg-white border-l border-brand-100 h-screen sticky top-0 shadow-sm shrink-0">
         <div className="flex items-center gap-3 px-5 py-5 border-b border-brand-100">
-          <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center text-xl shadow-sm">💅</div>
-          <div>
-            <p className="font-bold text-brand-900 text-sm leading-tight">NoyaGayaEzon</p>
-            <p className="text-xs text-muted">סטודיו לציפורניים</p>
+          <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+            {logoUrl ? <img src={logoUrl} alt={displayName} className="w-full h-full object-contain" /> : <span className="text-xl">💅</span>}
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-brand-900 text-sm leading-tight truncate">{displayName}</p>
+            <p className="text-xs text-muted">Calitor</p>
           </div>
         </div>
 
@@ -113,9 +121,13 @@ export function Sidebar() {
 
       {/* ── Mobile Top Header ── */}
       <div className="lg:hidden fixed top-0 right-0 left-0 z-40 bg-white border-b border-brand-100 px-4 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">💅</span>
-          <span className="font-bold text-brand-900 text-sm">NoyaGayaEzon</span>
+        <div className="flex items-center gap-2 min-w-0">
+          {logoUrl ? (
+            <img src={logoUrl} alt={displayName} className="w-6 h-6 rounded-lg object-contain shrink-0" />
+          ) : (
+            <span className="text-xl">💅</span>
+          )}
+          <span className="font-bold text-brand-900 text-sm truncate">{displayName}</span>
         </div>
         <NotificationBell />
       </div>

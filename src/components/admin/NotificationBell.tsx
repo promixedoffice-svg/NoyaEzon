@@ -29,7 +29,7 @@ export function NotificationBell() {
             Notification.permission === 'granted' &&
             localStorage.getItem('notifications_paused') !== '1'
           ) {
-            new Notification('💅 NoyaGayaEzon', {
+            new Notification('💅 Calitor', {
               body: `${newCount} בקשת תור ממתינה לאישור`,
               icon: '/favicon.ico',
             })
