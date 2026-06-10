@@ -5,13 +5,16 @@ import { BlockedTimesCalendar } from '@/components/admin/BlockedTimesCalendar'
 import { NotificationSettings } from '@/components/admin/NotificationSettings'
 import { FabSettings } from '@/components/admin/FabSettings'
 import { NavOrderSettings } from '@/components/admin/NavOrderSettings'
-import { Bell, Smartphone, LayoutGrid } from 'lucide-react'
+import { GoogleIntegrationSettings } from '@/components/admin/GoogleIntegrationSettings'
+import { isGoogleConfigured, getServiceAccountEmail } from '@/lib/google'
+import { Bell, Smartphone, LayoutGrid, RefreshCw } from 'lucide-react'
 
 export default async function SettingsPage() {
-  const [settings, workHours, availSettings] = await Promise.all([
+  const [settings, workHours, availSettings, googleSettings] = await Promise.all([
     prisma.businessSettings.findFirst({ select: { id: true, businessName: true, ownerName: true, businessNumber: true, phone: true, email: true, address: true, logoUrl: true, receiptStartingNumber: true, receiptFooterText: true, taskReminderMinutes: true } }),
     prisma.workHours.findMany({ orderBy: { dayOfWeek: 'asc' } }),
     prisma.availabilitySettings.findFirst(),
+    prisma.businessSettings.findFirst({ select: { googleSheetId: true, googleCalendarId: true, googleSheetsBackupEnabled: true, googleCalendarSyncEnabled: true } }),
   ])
 
   return (
@@ -47,6 +50,14 @@ export default async function SettingsPage() {
 
       <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 sm:p-6">
         <BlockedTimesCalendar />
+      </div>
+
+      {/* Google integration */}
+      <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4 sm:p-6">
+        <h2 className="font-semibold text-brand-900 mb-4 flex items-center gap-2">
+          <RefreshCw size={16} /> גיבוי וסנכרון Google
+        </h2>
+        <GoogleIntegrationSettings settings={googleSettings} serviceAccountEmail={getServiceAccountEmail()} isConfigured={isGoogleConfigured()} />
       </div>
     </div>
   )

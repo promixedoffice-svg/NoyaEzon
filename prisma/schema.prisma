@@ -73,6 +73,10 @@ model BusinessSettings {
   receiptStartingNumber Int      @default(1000)
   receiptFooterText     String?  @default("תודה על הביקור!")
   taskReminderMinutes   Int      @default(30)
+  googleSheetId             String?
+  googleCalendarId          String?
+  googleSheetsBackupEnabled Boolean @default(false)
+  googleCalendarSyncEnabled Boolean @default(false)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -187,6 +191,7 @@ model Appointment {
   cancelledAt     DateTime?
   confirmedAt     DateTime?
   completedAt     DateTime?
+  googleEventId   String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 

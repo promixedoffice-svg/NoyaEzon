@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
+import { syncAppointmentToCalendar } from '@/lib/googleCalendarSync'
 
 export async function GET(req: NextRequest) {
   if (!await requireAuth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -84,6 +85,16 @@ export async function POST(req: NextRequest) {
       addonIds: Array.isArray(body.addonIds) ? body.addonIds : [],
       isStudentDiscount: body.isStudentDiscount ?? false,
     },
+    include: { client: { select: { fullName: true } }, treatment: { select: { name: true } } },
   })
+
+  if (appointment.status !== 'cancelled') {
+    const settings = await prisma.businessSettings.findFirst()
+    if (settings?.googleCalendarSyncEnabled && settings.googleCalendarId) {
+      const eventId = await syncAppointmentToCalendar(appointment, settings.googleCalendarId)
+      if (eventId) await prisma.appointment.update({ where: { id: appointment.id }, data: { googleEventId: eventId } })
+    }
+  }
+
   return NextResponse.json(appointment)
 }
