@@ -7,7 +7,7 @@ import { dayOfWeekLabel } from '@/lib/utils'
 const DAYS = [0, 1, 2, 3, 4, 5, 6]
 
 interface WorkHour { id: string; dayOfWeek: number; isWorking: boolean; startTime: string; endTime: string }
-interface AvailSettings { id: string; minBookingHours: number; maxAppointmentsPerDay: number | null; slotIntervalMinutes: number }
+interface AvailSettings { id: string; minBookingHours: number; maxAppointmentsPerDay: number | null; slotIntervalMinutes: number; clientSlotIntervalMinutes: number }
 
 interface Props { workHours: WorkHour[]; availSettings: AvailSettings | null }
 
@@ -26,6 +26,7 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
     minBookingHours: initialAvail?.minBookingHours ?? 24,
     maxAppointmentsPerDay: initialAvail?.maxAppointmentsPerDay ?? null as number | null,
     slotIntervalMinutes: initialAvail?.slotIntervalMinutes ?? 15,
+    clientSlotIntervalMinutes: initialAvail?.clientSlotIntervalMinutes ?? 15,
   })
 
   function updateDay(day: number, field: string, value: string | boolean) {
@@ -95,7 +96,7 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
           <h3 className="font-medium text-brand-800 text-sm">הגדרות הזמנה</h3>
 
           <div>
-            <label className="block text-xs font-medium text-brand-700 mb-1.5">קפיצות זמן בין תורים</label>
+            <label className="block text-xs font-medium text-brand-700 mb-1.5">קפיצות זמן ביומן הפנימי (למטפלת)</label>
             <div className="flex gap-2">
               {[{ v: 5, label: '5 דק׳' }, { v: 15, label: 'רבע שעה' }, { v: 30, label: 'חצי שעה' }, { v: 60, label: 'שעה' }].map(({ v, label }) => (
                 <button
@@ -103,6 +104,22 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
                   type="button"
                   onClick={() => { setAvail(p => ({ ...p, slotIntervalMinutes: v })); setSaved(false) }}
                   className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition touch-manipulation ${avail.slotIntervalMinutes === v ? 'bg-brand-500 text-white border-brand-500' : 'border-brand-200 text-brand-700 hover:bg-brand-50 active:bg-brand-100'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-brand-700 mb-1.5">קפיצות זמן בהזמנה עצמית (מה שהמטופלות רואות)</label>
+            <div className="flex gap-2">
+              {[{ v: 5, label: '5 דק׳' }, { v: 15, label: 'רבע שעה' }, { v: 30, label: 'חצי שעה' }, { v: 60, label: 'שעה' }].map(({ v, label }) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => { setAvail(p => ({ ...p, clientSlotIntervalMinutes: v })); setSaved(false) }}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition touch-manipulation ${avail.clientSlotIntervalMinutes === v ? 'bg-brand-500 text-white border-brand-500' : 'border-brand-200 text-brand-700 hover:bg-brand-50 active:bg-brand-100'}`}
                 >
                   {label}
                 </button>

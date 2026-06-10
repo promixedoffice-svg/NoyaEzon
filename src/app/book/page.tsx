@@ -34,7 +34,7 @@ export default async function BookPage() {
         addons={addons}
         workHours={workHours}
         minBookingHours={availSettings?.minBookingHours ?? 24}
-        slotIntervalMinutes={availSettings?.slotIntervalMinutes ?? 15}
+        slotIntervalMinutes={availSettings?.clientSlotIntervalMinutes ?? availSettings?.slotIntervalMinutes ?? 15}
         blockedTimes={blockedTimes.map(b => ({ id: b.id, startAt: b.startAt.toISOString(), endAt: b.endAt.toISOString(), reason: b.reason, isVacation: b.isVacation }))}
       />
     </div>

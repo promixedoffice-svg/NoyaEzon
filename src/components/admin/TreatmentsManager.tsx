@@ -81,7 +81,7 @@ export function TreatmentsManager({ treatments: initial }: { treatments: Treatme
             <div className="grid sm:grid-cols-2 gap-4">
               <div><label className={labelClass}>שם הטיפול *</label><input required value={form.name} onChange={e => set('name', e.target.value)} className={inputClass} placeholder="לק ג׳ל..." /></div>
               <div><label className={labelClass}>מחיר (₪)</label><input type="number" value={form.defaultPrice} onChange={e => set('defaultPrice', parseFloat(e.target.value)||0)} className={inputClass} min="0" dir="ltr" /></div>
-              <div><label className={labelClass}>משך (דקות)</label><input type="number" value={form.durationMinutes} onChange={e => set('durationMinutes', parseInt(e.target.value)||60)} className={inputClass} min="15" step="15" dir="ltr" /></div>
+              <div><label className={labelClass}>משך (דקות)</label><input type="number" value={form.durationMinutes} onChange={e => set('durationMinutes', parseInt(e.target.value)||60)} className={inputClass} min="5" step="5" dir="ltr" /></div>
               <div><label className={labelClass}>מרווח (דקות)</label><input type="number" value={form.bufferMinutes} onChange={e => set('bufferMinutes', parseInt(e.target.value)||0)} className={inputClass} min="0" step="5" dir="ltr" /></div>
             </div>
             <div><label className={labelClass}>תיאור</label><textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} className={inputClass} /></div>

@@ -16,13 +16,14 @@ interface Props {
   addons?: Addon[]
   clients: Client[]
   defaultTime?: Date | null
+  slotIntervalMinutes?: number
   onClose: () => void
   onSaved: () => void
 }
 
 type ClientMode = 'existing' | 'new'
 
-export function AppointmentModal({ treatments, addons = [], clients, defaultTime, onClose, onSaved }: Props) {
+export function AppointmentModal({ treatments, addons = [], clients, defaultTime, slotIntervalMinutes = 15, onClose, onSaved }: Props) {
   const { businessName, ownerName } = useBusinessSettings()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -297,7 +298,7 @@ export function AppointmentModal({ treatments, addons = [], clients, defaultTime
               </div>
               <div>
                 <label className={labelClass}>שעה *</label>
-                <input type="time" required value={form.startTime} onChange={e => setF('startTime', e.target.value)} className={inputClass} dir="ltr" />
+                <input type="time" required value={form.startTime} onChange={e => setF('startTime', e.target.value)} className={inputClass} dir="ltr" step={slotIntervalMinutes * 60} />
               </div>
             </div>
 

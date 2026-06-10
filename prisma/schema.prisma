@@ -159,10 +159,11 @@ model BlockedTime {
 }
 
 model AvailabilitySettings {
-  id                    String @id @default(cuid())
-  minBookingHours       Int    @default(24)
-  maxAppointmentsPerDay Int?
-  slotIntervalMinutes   Int    @default(15)
+  id                        String @id @default(cuid())
+  minBookingHours           Int    @default(24)
+  maxAppointmentsPerDay     Int?
+  slotIntervalMinutes       Int    @default(15)
+  clientSlotIntervalMinutes Int    @default(15)
 
   @@map("availability_settings")
 }

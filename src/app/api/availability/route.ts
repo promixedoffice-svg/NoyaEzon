@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ slots: [] })
   }
 
-  const slotInterval = availSettings?.slotIntervalMinutes ?? 15
+  const slotInterval = availSettings?.clientSlotIntervalMinutes ?? availSettings?.slotIntervalMinutes ?? 15
   const [sh, sm] = workHours.startTime.split(':').map(Number)
   const [eh, em] = workHours.endTime.split(':').map(Number)
   const startMin = sh * 60 + sm

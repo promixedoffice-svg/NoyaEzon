@@ -20,9 +20,9 @@ type Addon = { id: string; name: string; price: number }
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7)
 
-interface Props { treatments: Treatment[]; clients: Client[]; addons: Addon[] }
+interface Props { treatments: Treatment[]; clients: Client[]; addons: Addon[]; slotIntervalMinutes?: number }
 
-export function CalendarView({ treatments, clients, addons }: Props) {
+export function CalendarView({ treatments, clients, addons, slotIntervalMinutes = 15 }: Props) {
   const [view, setView] = useState<ViewMode>('day')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -272,7 +272,7 @@ export function CalendarView({ treatments, clients, addons }: Props) {
         </div>
       )}
 
-      {showNewModal && <AppointmentModal treatments={treatments} addons={addons} clients={clients} defaultTime={newApptTime} onClose={() => { setShowNewModal(false); setNewApptTime(null) }} onSaved={() => { setShowNewModal(false); setNewApptTime(null); fetchAppointments() }} />}
+      {showNewModal && <AppointmentModal treatments={treatments} addons={addons} clients={clients} defaultTime={newApptTime} slotIntervalMinutes={slotIntervalMinutes} onClose={() => { setShowNewModal(false); setNewApptTime(null) }} onSaved={() => { setShowNewModal(false); setNewApptTime(null); fetchAppointments() }} />}
 
       {completingAppt && (() => {
         const apptAddons = (completingAppt.addonIds ?? [])
