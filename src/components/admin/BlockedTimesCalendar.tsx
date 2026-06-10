@@ -306,7 +306,9 @@ export function BlockedTimesCalendar() {
                       data-slot={slot}
                       onMouseDown={() => { if (!bt) startDrag(di, slot) }}
                       onMouseEnter={() => moveDrag(di, slot)}
+                      onTouchStart={() => { if (!bt) startDrag(di, slot) }}
                       onClick={() => { if (bt) setClickedBlock(bt) }}
+                      style={{ touchAction: 'none' }}
                       className={[
                         'relative border-r border-brand-50 last:border-r-0',
                         isHour ? 'border-t border-brand-100' : 'border-t border-brand-50/50',

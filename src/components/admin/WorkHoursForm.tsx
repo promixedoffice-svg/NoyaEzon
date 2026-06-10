@@ -97,7 +97,7 @@ export function WorkHoursForm({ workHours: initial, availSettings: initialAvail 
           <div>
             <label className="block text-xs font-medium text-brand-700 mb-1.5">קפיצות זמן בין תורים</label>
             <div className="flex gap-2">
-              {[{ v: 15, label: 'רבע שעה' }, { v: 30, label: 'חצי שעה' }, { v: 60, label: 'שעה' }].map(({ v, label }) => (
+              {[{ v: 5, label: '5 דק׳' }, { v: 15, label: 'רבע שעה' }, { v: 30, label: 'חצי שעה' }, { v: 60, label: 'שעה' }].map(({ v, label }) => (
                 <button
                   key={v}
                   type="button"
