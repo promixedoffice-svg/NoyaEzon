@@ -81,6 +81,8 @@ export async function POST(req: NextRequest) {
       price: body.price ?? null,
       notes: body.notes || null,
       status: body.status ?? 'pending',
+      addonIds: Array.isArray(body.addonIds) ? body.addonIds : [],
+      isStudentDiscount: body.isStudentDiscount ?? false,
     },
   })
   return NextResponse.json(appointment)

@@ -13,12 +13,15 @@ interface Props {
   guestEmail?: string | null
   treatmentName: string
   price: number | null
+  addons?: { name: string; price: number }[]
+  discountAmount?: number
+  discountLabel?: string | null
   onComplete: () => void
   onClose: () => void
 }
 
 export function CompleteReceiptModal({
-  appointmentId, clientId: initialClientId, clientName, clientPhone, guestEmail, treatmentName, price, onComplete, onClose
+  appointmentId, clientId: initialClientId, clientName, clientPhone, guestEmail, treatmentName, price, addons, discountAmount, discountLabel, onComplete, onClose
 }: Props) {
   const router = useRouter()
   const [step, setStep] = useState<'confirm' | 'create-client'>('confirm')
@@ -51,6 +54,9 @@ export function CompleteReceiptModal({
     params.set('clientName', clientName)
     params.set('service', treatmentName)
     if (price) params.set('amount', String(price))
+    if (addons && addons.length) params.set('addons', JSON.stringify(addons))
+    if (discountAmount) params.set('discountAmount', String(discountAmount))
+    if (discountLabel) params.set('discountLabel', discountLabel)
     router.push(`/admin/receipts?${params.toString()}`)
   }
 

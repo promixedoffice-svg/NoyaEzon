@@ -4,19 +4,25 @@ import Link from 'next/link'
 import { FileText, Printer } from 'lucide-react'
 import { ReceiptsPageClient } from '@/components/admin/ReceiptsPageClient'
 import { ReceiptRowActions } from '@/components/admin/ReceiptRowActions'
+import { ReceiptsExportActions } from '@/components/admin/ReceiptsExportActions'
 
 export default async function ReceiptsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ show?: string; new?: string; clientId?: string; clientName?: string; service?: string; amount?: string }>
+  searchParams: Promise<{ show?: string; new?: string; clientId?: string; clientName?: string; service?: string; amount?: string; addons?: string; discountAmount?: string; discountLabel?: string }>
 }) {
-  const { show, new: isNew, clientId, clientName, service, amount } = await searchParams
+  const { show, new: isNew, clientId, clientName, service, amount, addons: addonsParam, discountAmount, discountLabel } = await searchParams
   const showDeleted = show === 'deleted'
   const showCancelled = show === 'cancelled'
 
-  const prefill = isNew === '1' ? { clientId, clientName, service, amount } : null
+  let prefillAddons: { name: string; price: number }[] | undefined
+  if (addonsParam) {
+    try { prefillAddons = JSON.parse(addonsParam) } catch {}
+  }
 
-  const [receipts, activeCount, cancelledCount, deletedCount, clients] = await Promise.all([
+  const prefill = isNew === '1' ? { clientId, clientName, service, amount, addons: prefillAddons, discountAmount, discountLabel } : null
+
+  const [receipts, activeCount, cancelledCount, deletedCount, clients, treatments, addons, settings] = await Promise.all([
     prisma.receipt.findMany({
       where: showDeleted
         ? { deletedAt: { not: null } }
@@ -31,13 +37,19 @@ export default async function ReceiptsPage({
     prisma.receipt.count({ where: { deletedAt: null, status: 'cancelled' } }),
     prisma.receipt.count({ where: { deletedAt: { not: null } } }),
     prisma.client.findMany({ select: { id: true, fullName: true }, orderBy: { fullName: 'asc' }, where: { deletedAt: null } }),
+    prisma.treatment.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
+    prisma.addon.findMany({ where: { isActive: true }, orderBy: [{ order: 'asc' }, { name: 'asc' }] }),
+    prisma.businessSettings.findFirst(),
   ])
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-brand-900">קבלות</h1>
-        <ReceiptsPageClient clients={clients} prefill={prefill} />
+        <div className="flex items-center gap-2">
+          <ReceiptsExportActions defaultEmail={settings?.email} />
+          <ReceiptsPageClient clients={clients} treatments={treatments} addons={addons} prefill={prefill} />
+        </div>
       </div>
 
       {/* Tabs */}

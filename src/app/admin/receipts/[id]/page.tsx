@@ -12,6 +12,9 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
   if (!receipt) notFound()
 
   const settings = await prisma.businessSettings.findFirst()
+  const addonsList = Array.isArray(receipt.addons) ? (receipt.addons as { name: string; price: number }[]) : []
+  const addonsTotal = addonsList.reduce((s, a) => s + (a.price ?? 0), 0)
+  const baseAmount = receipt.amount + receipt.discountAmount - addonsTotal
 
   return (
     <div className="max-w-2xl space-y-4">
@@ -81,8 +84,20 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
           <tbody>
             <tr className="border-b border-brand-50">
               <td className="py-3 text-brand-900">{receipt.serviceDescription}</td>
-              <td className="py-3 text-left font-semibold text-brand-900">{formatCurrency(receipt.amount)}</td>
+              <td className="py-3 text-left font-semibold text-brand-900">{formatCurrency(baseAmount)}</td>
             </tr>
+            {addonsList.map((a, i) => (
+              <tr key={i} className="border-b border-brand-50">
+                <td className="py-2 text-muted text-sm">+ {a.name}</td>
+                <td className="py-2 text-left text-sm text-muted">{formatCurrency(a.price)}</td>
+              </tr>
+            ))}
+            {receipt.discountLabel && receipt.discountAmount > 0 && (
+              <tr className="border-b border-brand-50">
+                <td className="py-2 text-amber-700 text-sm">{receipt.discountLabel}</td>
+                <td className="py-2 text-left text-sm text-amber-700">-{formatCurrency(receipt.discountAmount)}</td>
+              </tr>
+            )}
           </tbody>
           <tfoot>
             <tr>

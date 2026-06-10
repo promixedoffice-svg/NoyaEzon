@@ -23,6 +23,9 @@ export async function POST(req: NextRequest) {
       method: body.method,
       serviceDescription: body.serviceDescription,
       clientName: body.clientName,
+      addons: Array.isArray(body.addons) ? body.addons : undefined,
+      discountAmount: typeof body.discountAmount === 'number' ? body.discountAmount : 0,
+      discountLabel: body.discountLabel || null,
       status: 'active',
     },
   })

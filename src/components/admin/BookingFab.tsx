@@ -11,6 +11,7 @@ export function BookingFab() {
   const [pos, setPos] = useState(DEFAULT_POS)
   const [showModal, setShowModal] = useState(false)
   const [treatments, setTreatments] = useState<any[]>([])
+  const [addons, setAddons] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -42,13 +43,16 @@ export function BookingFab() {
     if (loading) return
     setLoading(true)
     try {
-      const [tRes, cRes] = await Promise.all([
+      const [tRes, aRes, cRes] = await Promise.all([
         fetch('/api/treatments'),
+        fetch('/api/addons'),
         fetch('/api/clients'),
       ])
       const t = await tRes.json()
+      const a = await aRes.json()
       const c = await cRes.json()
       setTreatments(Array.isArray(t) ? t.filter((x: any) => x.isActive !== false) : [])
+      setAddons(Array.isArray(a) ? a.filter((x: any) => x.isActive !== false) : [])
       setClients(Array.isArray(c) ? c.filter((x: any) => !x.deletedAt) : [])
     } catch {}
     setLoading(false)
@@ -154,9 +158,10 @@ export function BookingFab() {
       {showModal && (
         <AppointmentModal
           treatments={treatments}
+          addons={addons}
           clients={clients}
           onClose={() => setShowModal(false)}
-          onSaved={() => { setShowModal(false); setTreatments([]); setClients([]) }}
+          onSaved={() => { setShowModal(false); setTreatments([]); setAddons([]); setClients([]) }}
         />
       )}
     </>

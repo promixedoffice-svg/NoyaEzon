@@ -6,19 +6,28 @@ import { Plus } from 'lucide-react'
 import { AddReceiptForm } from './AddReceiptForm'
 
 interface Client { id: string; fullName: string }
+interface Treatment { id: string; name: string; defaultPrice: number; studentDiscountEnabled: boolean; studentDiscountPercent: number }
+interface Addon { id: string; name: string; price: number }
 
 interface Prefill {
   clientId?: string
   clientName?: string
   service?: string
   amount?: string
+  addons?: { name: string; price: number }[]
+  discountAmount?: string
+  discountLabel?: string
 }
 
 export function ReceiptsPageClient({
   clients,
+  treatments,
+  addons,
   prefill,
 }: {
   clients: Client[]
+  treatments: Treatment[]
+  addons: Addon[]
   prefill?: Prefill | null
 }) {
   const router = useRouter()
@@ -41,6 +50,8 @@ export function ReceiptsPageClient({
       {showForm && (
         <AddReceiptForm
           clients={clients}
+          treatments={treatments}
+          addons={addons}
           defaultValues={prefill}
           onClose={handleClose}
         />

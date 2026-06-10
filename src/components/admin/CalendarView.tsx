@@ -14,14 +14,15 @@ import { CompleteReceiptModal } from './CompleteReceiptModal'
 type ViewMode = 'day' | 'week' | 'month'
 type Appointment = any
 type BlockedTime = { id: string; startAt: string; endAt: string; reason: string | null; isVacation: boolean }
-type Treatment = { id: string; name: string; defaultPrice: number; durationMinutes: number; bufferMinutes: number; color: string }
+type Treatment = { id: string; name: string; defaultPrice: number; durationMinutes: number; bufferMinutes: number; color: string; studentDiscountEnabled?: boolean; studentDiscountPercent?: number }
 type Client = { id: string; fullName: string; phone: string | null }
+type Addon = { id: string; name: string; price: number }
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7)
 
-interface Props { treatments: Treatment[]; clients: Client[] }
+interface Props { treatments: Treatment[]; clients: Client[]; addons: Addon[] }
 
-export function CalendarView({ treatments, clients }: Props) {
+export function CalendarView({ treatments, clients, addons }: Props) {
   const [view, setView] = useState<ViewMode>('day')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -271,21 +272,36 @@ export function CalendarView({ treatments, clients }: Props) {
         </div>
       )}
 
-      {showNewModal && <AppointmentModal treatments={treatments} clients={clients} defaultTime={newApptTime} onClose={() => { setShowNewModal(false); setNewApptTime(null) }} onSaved={() => { setShowNewModal(false); setNewApptTime(null); fetchAppointments() }} />}
+      {showNewModal && <AppointmentModal treatments={treatments} addons={addons} clients={clients} defaultTime={newApptTime} onClose={() => { setShowNewModal(false); setNewApptTime(null) }} onSaved={() => { setShowNewModal(false); setNewApptTime(null); fetchAppointments() }} />}
 
-      {completingAppt && (
-        <CompleteReceiptModal
-          appointmentId={completingAppt.id}
-          clientId={completingAppt.clientId}
-          clientName={completingAppt.client?.fullName ?? completingAppt.guestName ?? 'לקוחה'}
-          clientPhone={completingAppt.client?.phone ?? completingAppt.guestPhone}
-          guestEmail={completingAppt.guestEmail}
-          treatmentName={completingAppt.treatment?.name ?? 'טיפול'}
-          price={completingAppt.price}
-          onComplete={() => { setCompletingAppt(null); fetchAppointments() }}
-          onClose={() => setCompletingAppt(null)}
-        />
-      )}
+      {completingAppt && (() => {
+        const apptAddons = (completingAppt.addonIds ?? [])
+          .map((id: string) => addons.find(a => a.id === id))
+          .filter(Boolean)
+          .map((a: any) => ({ name: a.name as string, price: a.price as number }))
+        const apptTreatment = treatments.find(t => t.id === completingAppt.treatmentId)
+        const addonsTotal = apptAddons.reduce((s: number, a: { name: string; price: number }) => s + a.price, 0)
+        const subtotal = (apptTreatment?.defaultPrice ?? 0) + addonsTotal
+        const discountPercent = completingAppt.isStudentDiscount ? (apptTreatment?.studentDiscountPercent ?? 0) : 0
+        const discountAmount = Math.round((subtotal * discountPercent / 100) * 100) / 100
+        const discountLabel = discountPercent > 0 ? `הנחת חיילת/סטודנטית (${discountPercent}%)` : null
+        return (
+          <CompleteReceiptModal
+            appointmentId={completingAppt.id}
+            clientId={completingAppt.clientId}
+            clientName={completingAppt.client?.fullName ?? completingAppt.guestName ?? 'לקוחה'}
+            clientPhone={completingAppt.client?.phone ?? completingAppt.guestPhone}
+            guestEmail={completingAppt.guestEmail}
+            treatmentName={completingAppt.treatment?.name ?? 'טיפול'}
+            price={completingAppt.price}
+            addons={apptAddons}
+            discountAmount={discountAmount}
+            discountLabel={discountLabel}
+            onComplete={() => { setCompletingAppt(null); fetchAppointments() }}
+            onClose={() => setCompletingAppt(null)}
+          />
+        )
+      })()}
     </div>
   )
 }

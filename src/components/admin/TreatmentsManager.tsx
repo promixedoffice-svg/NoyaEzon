@@ -14,11 +14,13 @@ interface Treatment {
   bufferMinutes: number
   isActive: boolean
   color: string
+  studentDiscountEnabled: boolean
+  studentDiscountPercent: number
 }
 
 const COLORS = ['#d4605c', '#c084fc', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e', '#8b5cf6', '#06b6d4']
 
-const defaultForm = { name: '', description: '', defaultPrice: 0, durationMinutes: 60, bufferMinutes: 15, isActive: true, color: COLORS[0] }
+const defaultForm = { name: '', description: '', defaultPrice: 0, durationMinutes: 60, bufferMinutes: 15, isActive: true, color: COLORS[0], studentDiscountEnabled: false, studentDiscountPercent: 0 }
 
 export function TreatmentsManager({ treatments: initial }: { treatments: Treatment[] }) {
   const router = useRouter()
@@ -31,7 +33,7 @@ export function TreatmentsManager({ treatments: initial }: { treatments: Treatme
 
   function startNew() { setForm(defaultForm); setEditing(null); setShowForm(true) }
   function startEdit(t: Treatment) {
-    setForm({ name: t.name, description: t.description ?? '', defaultPrice: t.defaultPrice, durationMinutes: t.durationMinutes, bufferMinutes: t.bufferMinutes, isActive: t.isActive, color: t.color })
+    setForm({ name: t.name, description: t.description ?? '', defaultPrice: t.defaultPrice, durationMinutes: t.durationMinutes, bufferMinutes: t.bufferMinutes, isActive: t.isActive, color: t.color, studentDiscountEnabled: t.studentDiscountEnabled, studentDiscountPercent: t.studentDiscountPercent })
     setEditing(t); setShowForm(true)
   }
   function set(field: string, value: string | number | boolean) { setForm(prev => ({ ...prev, [field]: value })) }
@@ -97,6 +99,20 @@ export function TreatmentsManager({ treatments: initial }: { treatments: Treatme
               <input type="checkbox" checked={form.isActive} onChange={e => set('isActive', e.target.checked)} className="w-4 h-4 rounded accent-brand-500" />
               <span className="text-sm font-medium text-brand-800">פעיל</span>
             </label>
+
+            <div className="bg-brand-50 rounded-xl p-3 space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.studentDiscountEnabled} onChange={e => set('studentDiscountEnabled', e.target.checked)} className="w-4 h-4 rounded accent-brand-500" />
+                <span className="text-sm font-medium text-brand-800">אפשרי הנחת חיילת/סטודנטית בטיפול זה</span>
+              </label>
+              {form.studentDiscountEnabled && (
+                <div>
+                  <label className={labelClass}>אחוז הנחה (%)</label>
+                  <input type="number" value={form.studentDiscountPercent} onChange={e => set('studentDiscountPercent', parseFloat(e.target.value) || 0)} className={inputClass} min="0" max="100" step="1" dir="ltr" />
+                </div>
+              )}
+            </div>
+
             {error && <div className="bg-red-50 text-red-700 text-sm rounded-xl px-4 py-3 border border-red-100">{error}</div>}
             <div className="flex gap-3">
               <button type="submit" disabled={loading} className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold rounded-xl transition">{loading ? 'שומרת...' : editing ? 'שמירה' : 'הוספה'}</button>
@@ -117,10 +133,13 @@ export function TreatmentsManager({ treatments: initial }: { treatments: Treatme
                 <p className="font-semibold text-brand-900">{t.name}</p>
                 {!t.isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">לא פעיל</span>}
               </div>
-              <div className="flex gap-4 text-xs text-muted mt-1">
+              <div className="flex gap-4 text-xs text-muted mt-1 flex-wrap">
                 <span>{t.durationMinutes} דק׳</span>
                 <span>מרווח: {t.bufferMinutes} דק׳</span>
                 <span className="font-medium text-brand-600">{formatCurrency(t.defaultPrice)}</span>
+                {t.studentDiscountEnabled && (
+                  <span className="text-amber-600 font-medium">הנחת חיילת/סטודנטית: {t.studentDiscountPercent}%</span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">

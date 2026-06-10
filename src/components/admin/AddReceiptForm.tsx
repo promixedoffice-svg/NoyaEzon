@@ -3,22 +3,41 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 
 interface Client { id: string; fullName: string }
+interface Treatment { id: string; name: string; defaultPrice: number; studentDiscountEnabled: boolean; studentDiscountPercent: number }
+interface Addon { id: string; name: string; price: number }
 
 interface DefaultValues {
   clientId?: string
   clientName?: string
   service?: string
   amount?: string
+  addons?: { name: string; price: number }[]
+  discountAmount?: string
+  discountLabel?: string
+}
+
+function computePrice(treatment: Treatment | undefined, addonIds: string[], addons: Addon[], isStudentDiscount: boolean) {
+  const selectedAddons = addonIds.map(id => addons.find(a => a.id === id)).filter(Boolean) as Addon[]
+  const addonsTotal = selectedAddons.reduce((s, a) => s + a.price, 0)
+  const subtotal = (treatment?.defaultPrice ?? 0) + addonsTotal
+  const discountPercent = isStudentDiscount && treatment?.studentDiscountEnabled ? treatment.studentDiscountPercent : 0
+  const discountAmount = Math.round((subtotal * discountPercent / 100) * 100) / 100
+  return { selectedAddons, addonsTotal, subtotal, discountPercent, discountAmount, finalPrice: subtotal - discountAmount }
 }
 
 export function AddReceiptForm({
   clients,
+  treatments,
+  addons,
   defaultValues,
   onClose,
 }: {
   clients: Client[]
+  treatments: Treatment[]
+  addons: Addon[]
   defaultValues?: DefaultValues | null
   onClose: () => void
 }) {
@@ -31,8 +50,39 @@ export function AddReceiptForm({
     amount: defaultValues?.amount ?? '',
     method: 'cash' as const,
   })
+  const [treatmentId, setTreatmentId] = useState('')
+  const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([])
+  const [isStudentDiscount, setIsStudentDiscount] = useState(false)
+
+  const isPrefilled = !!defaultValues?.service
+  const selectedTreatment = treatments.find(t => t.id === treatmentId)
+  const { selectedAddons, discountAmount, discountPercent, finalPrice } = computePrice(selectedTreatment, selectedAddonIds, addons, isStudentDiscount)
 
   function set(field: string, value: string) { setForm(p => ({ ...p, [field]: value })) }
+
+  function handleTreatmentChange(id: string) {
+    setTreatmentId(id)
+    setSelectedAddonIds([])
+    setIsStudentDiscount(false)
+    if (!id) return
+    const t = treatments.find(x => x.id === id)
+    if (!t) return
+    setForm(p => ({ ...p, serviceDescription: t.name, amount: String(t.defaultPrice) }))
+  }
+
+  function toggleAddon(id: string) {
+    const next = selectedAddonIds.includes(id) ? selectedAddonIds.filter(x => x !== id) : [...selectedAddonIds, id]
+    setSelectedAddonIds(next)
+    const { finalPrice: fp } = computePrice(selectedTreatment, next, addons, isStudentDiscount)
+    setForm(p => ({ ...p, amount: String(fp) }))
+  }
+
+  function toggleStudentDiscount() {
+    const next = !isStudentDiscount
+    setIsStudentDiscount(next)
+    const { finalPrice: fp } = computePrice(selectedTreatment, selectedAddonIds, addons, next)
+    setForm(p => ({ ...p, amount: String(fp) }))
+  }
 
   const selectedClient = clients.find(c => c.id === form.clientId)
   const clientName = selectedClient?.fullName ?? defaultValues?.clientName ?? ''
@@ -42,16 +92,28 @@ export function AddReceiptForm({
     if (!form.clientId || !form.serviceDescription || !form.amount) return
     setLoading(true); setError('')
 
+    const body: any = {
+      clientId: form.clientId,
+      serviceDescription: form.serviceDescription,
+      amount: parseFloat(form.amount),
+      method: form.method,
+      clientName,
+    }
+
+    if (isPrefilled) {
+      if (defaultValues?.addons?.length) body.addons = defaultValues.addons
+      if (defaultValues?.discountAmount) body.discountAmount = parseFloat(defaultValues.discountAmount)
+      if (defaultValues?.discountLabel) body.discountLabel = defaultValues.discountLabel
+    } else {
+      if (selectedAddons.length) body.addons = selectedAddons.map(a => ({ name: a.name, price: a.price }))
+      if (discountAmount) body.discountAmount = discountAmount
+      if (discountPercent > 0) body.discountLabel = `הנחת חיילת/סטודנטית (${discountPercent}%)`
+    }
+
     const res = await fetch('/api/receipts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientId: form.clientId,
-        serviceDescription: form.serviceDescription,
-        amount: parseFloat(form.amount),
-        method: form.method,
-        clientName,
-      }),
+      body: JSON.stringify(body),
     })
 
     setLoading(false)
@@ -81,6 +143,60 @@ export function AddReceiptForm({
               {clients.map(c => <option key={c.id} value={c.id}>{c.fullName}</option>)}
             </select>
           </div>
+
+          {/* Itemized breakdown from a completed appointment */}
+          {isPrefilled && (defaultValues?.addons?.length || defaultValues?.discountLabel) && (
+            <div className="bg-brand-50 border border-brand-100 rounded-xl p-3 text-sm space-y-1">
+              <div className="flex justify-between"><span className="text-muted">{defaultValues?.service}</span><span className="font-medium">{formatCurrency(parseFloat(defaultValues?.amount ?? '0') + parseFloat(defaultValues?.discountAmount ?? '0') - (defaultValues?.addons?.reduce((s, a) => s + a.price, 0) ?? 0))}</span></div>
+              {defaultValues?.addons?.map((a, i) => (
+                <div key={i} className="flex justify-between text-muted"><span>+ {a.name}</span><span>{formatCurrency(a.price)}</span></div>
+              ))}
+              {defaultValues?.discountLabel && (
+                <div className="flex justify-between text-amber-700"><span>{defaultValues.discountLabel}</span><span>-{formatCurrency(parseFloat(defaultValues?.discountAmount ?? '0'))}</span></div>
+              )}
+            </div>
+          )}
+
+          {/* Treatment + addons + discount selection (manual receipts) */}
+          {!isPrefilled && (
+            <>
+              <div>
+                <label className={labelClass}>טיפול (אופציונלי)</label>
+                <select value={treatmentId} onChange={e => handleTreatmentChange(e.target.value)} className={inputClass}>
+                  <option value="">בחרי טיפול...</option>
+                  {treatments.map(t => <option key={t.id} value={t.id}>{t.name} ({formatCurrency(t.defaultPrice)})</option>)}
+                </select>
+              </div>
+
+              {treatmentId && addons.length > 0 && (
+                <div className="bg-brand-50 border border-brand-100 rounded-xl p-3">
+                  <p className="text-xs font-medium text-brand-700 mb-2">תוספות</p>
+                  <div className="space-y-1.5">
+                    {addons.map(a => (
+                      <label key={a.id} className="flex items-center justify-between text-sm cursor-pointer">
+                        <span className="flex items-center gap-2">
+                          <input type="checkbox" checked={selectedAddonIds.includes(a.id)} onChange={() => toggleAddon(a.id)} className="rounded border-brand-300 text-brand-500 focus:ring-brand-400" />
+                          {a.name}
+                        </span>
+                        <span className="text-muted">{formatCurrency(a.price)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedTreatment?.studentDiscountEnabled && (
+                <label className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm cursor-pointer">
+                  <span className="flex items-center gap-2 text-amber-800 font-medium">
+                    <input type="checkbox" checked={isStudentDiscount} onChange={toggleStudentDiscount} className="rounded border-amber-300 text-amber-600 focus:ring-amber-400" />
+                    הנחת חיילת/סטודנטית ({selectedTreatment.studentDiscountPercent}%)
+                  </span>
+                  {discountAmount > 0 && <span className="text-amber-700">-{formatCurrency(discountAmount)}</span>}
+                </label>
+              )}
+            </>
+          )}
+
           <div>
             <label className={labelClass}>תיאור שירות *</label>
             <input

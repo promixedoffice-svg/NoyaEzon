@@ -7,11 +7,13 @@ import { useBusinessSettings, buildWhatsAppMessage, getFirstName } from '@/lib/u
 import { X, Search, UserPlus, Check, MessageCircle, Mail } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
-interface Treatment { id: string; name: string; defaultPrice: number; durationMinutes: number; bufferMinutes: number; color: string }
+interface Treatment { id: string; name: string; defaultPrice: number; durationMinutes: number; bufferMinutes: number; color: string; studentDiscountEnabled?: boolean; studentDiscountPercent?: number }
+interface Addon { id: string; name: string; price: number }
 interface Client { id: string; fullName: string; phone: string | null }
 
 interface Props {
   treatments: Treatment[]
+  addons?: Addon[]
   clients: Client[]
   defaultTime?: Date | null
   onClose: () => void
@@ -20,7 +22,7 @@ interface Props {
 
 type ClientMode = 'existing' | 'new'
 
-export function AppointmentModal({ treatments, clients, defaultTime, onClose, onSaved }: Props) {
+export function AppointmentModal({ treatments, addons = [], clients, defaultTime, onClose, onSaved }: Props) {
   const { businessName, ownerName } = useBusinessSettings()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -33,6 +35,9 @@ export function AppointmentModal({ treatments, clients, defaultTime, onClose, on
   const defaultDate = defaultTime ? format(defaultTime, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
   const defaultHour = defaultTime ? format(defaultTime, 'HH:mm') : '10:00'
 
+  const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([])
+  const [isStudentDiscount, setIsStudentDiscount] = useState(false)
+
   const [form, setForm] = useState({
     treatmentId: treatments[0]?.id ?? '',
     date: defaultDate,
@@ -41,15 +46,38 @@ export function AppointmentModal({ treatments, clients, defaultTime, onClose, on
     price: String(treatments[0]?.defaultPrice ?? 0),
   })
 
+  function computePrice(treatment: Treatment | undefined, addonIds: string[], studentDiscount: boolean) {
+    const addonsTotal = addons.filter(a => addonIds.includes(a.id)).reduce((sum, a) => sum + a.price, 0)
+    const subtotal = (treatment?.defaultPrice ?? 0) + addonsTotal
+    const discountPercent = treatment?.studentDiscountEnabled && studentDiscount ? (treatment.studentDiscountPercent ?? 0) : 0
+    return subtotal - subtotal * (discountPercent / 100)
+  }
+
   function setF(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
     if (field === 'treatmentId') {
       const t = treatments.find(t => t.id === value)
-      if (t) setForm(prev => ({ ...prev, treatmentId: value, price: String(t.defaultPrice) }))
+      setSelectedAddonIds([])
+      setIsStudentDiscount(false)
+      if (t) setForm(prev => ({ ...prev, treatmentId: value, price: String(computePrice(t, [], false)) }))
     }
   }
 
+  function toggleAddon(id: string) {
+    const next = selectedAddonIds.includes(id) ? selectedAddonIds.filter(i => i !== id) : [...selectedAddonIds, id]
+    setSelectedAddonIds(next)
+    setForm(prev => ({ ...prev, price: String(computePrice(selectedTreatment, next, isStudentDiscount)) }))
+  }
+
+  function toggleStudentDiscount(checked: boolean) {
+    setIsStudentDiscount(checked)
+    setForm(prev => ({ ...prev, price: String(computePrice(selectedTreatment, selectedAddonIds, checked)) }))
+  }
+
   const selectedTreatment = treatments.find(t => t.id === form.treatmentId)
+  const addonsTotal = addons.filter(a => selectedAddonIds.includes(a.id)).reduce((sum, a) => sum + a.price, 0)
+  const discountPercent = selectedTreatment?.studentDiscountEnabled && isStudentDiscount ? (selectedTreatment.studentDiscountPercent ?? 0) : 0
+  const discountAmount = (((selectedTreatment?.defaultPrice ?? 0) + addonsTotal) * discountPercent) / 100
   const filteredClients = clients.filter(c =>
     !clientSearch || c.fullName.includes(clientSearch) || c.phone?.includes(clientSearch)
   ).slice(0, 8)
@@ -96,6 +124,8 @@ export function AppointmentModal({ treatments, clients, defaultTime, onClose, on
         endAt: endAt.toISOString(),
         price: parseFloat(form.price) || null,
         notes: form.notes || null,
+        addonIds: selectedAddonIds,
+        isStudentDiscount: discountPercent > 0,
         status: 'confirmed',
       }),
     })
@@ -275,6 +305,36 @@ export function AppointmentModal({ treatments, clients, defaultTime, onClose, on
               <div className="bg-brand-50 rounded-xl px-4 py-3 text-sm text-brand-700">
                 משך: {selectedTreatment.durationMinutes} דקות + {selectedTreatment.bufferMinutes} דק׳ מרווח
               </div>
+            )}
+
+            {/* Add-ons */}
+            {addons.length > 0 && (
+              <div>
+                <label className={labelClass}>תוספות</label>
+                <div className="space-y-2 bg-brand-50 rounded-xl p-3">
+                  {addons.map(a => (
+                    <label key={a.id} className="flex items-center justify-between gap-3 cursor-pointer">
+                      <span className="flex items-center gap-2 text-sm text-brand-900">
+                        <input type="checkbox" checked={selectedAddonIds.includes(a.id)} onChange={() => toggleAddon(a.id)} className="w-4 h-4 rounded accent-brand-500" />
+                        {a.name}
+                      </span>
+                      <span className="text-sm font-medium text-brand-600">{formatCurrency(a.price)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Student/soldier discount */}
+            {selectedTreatment?.studentDiscountEnabled && (
+              <label className="flex items-center gap-2 cursor-pointer bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <input type="checkbox" checked={isStudentDiscount} onChange={e => toggleStudentDiscount(e.target.checked)} className="w-4 h-4 rounded accent-brand-500" />
+                <span className="text-sm font-medium text-amber-900">חיילת/סטודנטית (הנחה {selectedTreatment.studentDiscountPercent}%)</span>
+              </label>
+            )}
+
+            {discountAmount > 0 && (
+              <div className="text-xs text-amber-700 -mt-2">הנחה: -{formatCurrency(discountAmount)}</div>
             )}
 
             <div>

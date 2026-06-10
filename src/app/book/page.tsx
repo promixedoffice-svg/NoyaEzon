@@ -5,9 +5,10 @@ export const dynamic = 'force-dynamic'
 
 export default async function BookPage() {
   const now = new Date()
-  const [settings, treatments, workHours, availSettings, blockedTimes] = await Promise.all([
+  const [settings, treatments, addons, workHours, availSettings, blockedTimes] = await Promise.all([
     prisma.businessSettings.findFirst(),
     prisma.treatment.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
+    prisma.addon.findMany({ where: { isActive: true }, orderBy: [{ order: 'asc' }, { name: 'asc' }] }),
     prisma.workHours.findMany({ orderBy: { dayOfWeek: 'asc' } }),
     prisma.availabilitySettings.findFirst(),
     prisma.blockedTime.findMany({ where: { endAt: { gte: now } }, orderBy: { startAt: 'asc' } }),
@@ -30,6 +31,7 @@ export default async function BookPage() {
       <BookingPortal
         businessName={settings?.businessName ?? 'הסטודיו'}
         treatments={treatments}
+        addons={addons}
         workHours={workHours}
         minBookingHours={availSettings?.minBookingHours ?? 24}
         slotIntervalMinutes={availSettings?.slotIntervalMinutes ?? 15}

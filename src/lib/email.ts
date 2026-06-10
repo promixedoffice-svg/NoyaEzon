@@ -72,6 +72,38 @@ export async function sendAppointmentRejected({
   })
 }
 
+export async function sendReceiptsExport({
+  to,
+  businessName,
+  buffer,
+}: {
+  to: string
+  businessName: string
+  buffer: Buffer
+}) {
+  const dateStr = format(new Date(), 'd.M.yyyy', { locale: he })
+
+  await getResend().emails.send({
+    from: `${businessName} <${FROM}>`,
+    to,
+    subject: `ייצוא קבלות — ${dateStr}`,
+    html: `
+      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #c0403c;">ייצוא קבלות 📄</h2>
+        <p>מצורף קובץ אקסל עם כל הקבלות נכון לתאריך ${dateStr}.</p>
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #f0dede;">
+        <p style="color: #9b8585; font-size: 12px; text-align: center;">${businessName}</p>
+      </div>
+    `,
+    attachments: [
+      {
+        filename: `receipts-${dateStr}.xlsx`,
+        content: buffer,
+      },
+    ],
+  })
+}
+
 export async function sendReminder({
   to,
   guestName,

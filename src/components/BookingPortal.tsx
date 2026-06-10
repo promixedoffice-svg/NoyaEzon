@@ -6,19 +6,22 @@ import { he } from 'date-fns/locale'
 import { ChevronRight, ChevronLeft, Check, Clock, Calendar, Loader2 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 
-interface Treatment { id: string; name: string; description: string | null; defaultPrice: number; durationMinutes: number; bufferMinutes: number; color: string }
+interface Treatment { id: string; name: string; description: string | null; defaultPrice: number; durationMinutes: number; bufferMinutes: number; color: string; studentDiscountEnabled?: boolean; studentDiscountPercent?: number }
+interface Addon { id: string; name: string; price: number }
 interface WorkHour { dayOfWeek: number; isWorking: boolean; startTime: string; endTime: string }
 interface BlockedTime { id: string; startAt: string; endAt: string; reason: string | null; isVacation: boolean }
-interface Props { businessName: string; treatments: Treatment[]; workHours: WorkHour[]; minBookingHours: number; slotIntervalMinutes: number; blockedTimes?: BlockedTime[] }
+interface Props { businessName: string; treatments: Treatment[]; addons?: Addon[]; workHours: WorkHour[]; minBookingHours: number; slotIntervalMinutes: number; blockedTimes?: BlockedTime[] }
 
 type Step = 'treatment' | 'date' | 'time' | 'info' | 'success'
 
-export function BookingPortal({ businessName, treatments, workHours, minBookingHours, blockedTimes = [] }: Props) {
+export function BookingPortal({ businessName, treatments, addons = [], workHours, minBookingHours, blockedTimes = [] }: Props) {
   const [step, setStep] = useState<Step>('treatment')
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [info, setInfo] = useState({ name: '', phone: '', email: '', notes: '' })
+  const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([])
+  const [isStudentDiscount, setIsStudentDiscount] = useState(false)
   const [loading, setLoading] = useState(false)
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
@@ -28,6 +31,19 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
 
   const minDate = addDays(new Date(), Math.ceil(minBookingHours / 24))
   const calendarDays = useMemo(() => Array.from({ length: 28 }, (_, i) => addDays(minDate, i + calendarOffset)), [calendarOffset, minDate])
+
+  function toggleAddon(id: string) {
+    setSelectedAddonIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+  }
+
+  const addonsTotal = useMemo(
+    () => addons.filter(a => selectedAddonIds.includes(a.id)).reduce((sum, a) => sum + a.price, 0),
+    [addons, selectedAddonIds]
+  )
+  const subtotal = (selectedTreatment?.defaultPrice ?? 0) + addonsTotal
+  const discountPercent = selectedTreatment?.studentDiscountEnabled && isStudentDiscount ? (selectedTreatment.studentDiscountPercent ?? 0) : 0
+  const discountAmount = subtotal * (discountPercent / 100)
+  const finalPrice = subtotal - discountAmount
 
   function isWorkingDay(date: Date) {
     const wh = workHours.find(w => w.dayOfWeek === getDay(date))
@@ -70,7 +86,9 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
         notes: info.notes || null,
         startAt: startAt.toISOString(),
         endAt: endAt.toISOString(),
-        price: selectedTreatment.defaultPrice,
+        price: finalPrice,
+        addonIds: selectedAddonIds,
+        isStudentDiscount: discountPercent > 0,
         status: 'pending',
       }),
     })
@@ -128,7 +146,7 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted">מחיר</span>
-              <span className="font-semibold text-brand-900">{formatCurrency(selectedTreatment?.defaultPrice ?? 0)}</span>
+              <span className="font-semibold text-brand-900">{formatCurrency(finalPrice)}</span>
             </div>
           </div>
 
@@ -203,7 +221,7 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
           <div className="space-y-3">
             <h2 className="text-lg font-semibold text-brand-900 text-center mb-4">בחרי סוג טיפול</h2>
             {treatments.map(t => (
-              <button key={t.id} onClick={() => { setSelectedTreatment(t); setStep('date') }}
+              <button key={t.id} onClick={() => { setSelectedTreatment(t); setSelectedAddonIds([]); setIsStudentDiscount(false); setStep('date') }}
                 className="w-full bg-white rounded-2xl border border-brand-100 shadow-sm hover:shadow-md hover:border-brand-300 p-5 text-right transition flex items-center gap-4 group">
                 <div className="w-3 h-12 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
                 <div className="flex-1">
@@ -308,6 +326,55 @@ export function BookingPortal({ businessName, treatments, workHours, minBookingH
               <p>📅 {selectedDate ? format(selectedDate, 'EEEE, d MMMM', { locale: he }) : ''} · {selectedTime}</p>
               <p>⏱ {selectedTreatment?.durationMinutes} דקות · {formatCurrency(selectedTreatment?.defaultPrice ?? 0)}</p>
             </div>
+
+            {/* Add-ons */}
+            {addons.length > 0 && (
+              <div className="bg-white border border-brand-100 rounded-xl p-4 mb-5">
+                <p className="text-sm font-medium text-brand-800 mb-3">תוספות (אופציונלי)</p>
+                <div className="space-y-2">
+                  {addons.map(a => (
+                    <label key={a.id} className="flex items-center justify-between gap-3 cursor-pointer">
+                      <span className="flex items-center gap-2 text-sm text-brand-900">
+                        <input type="checkbox" checked={selectedAddonIds.includes(a.id)} onChange={() => toggleAddon(a.id)} className="w-4 h-4 rounded accent-brand-500" />
+                        {a.name}
+                      </span>
+                      <span className="text-sm font-medium text-brand-600">{formatCurrency(a.price)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Student/soldier discount */}
+            {selectedTreatment?.studentDiscountEnabled && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={isStudentDiscount} onChange={e => setIsStudentDiscount(e.target.checked)} className="w-4 h-4 rounded accent-brand-500" />
+                  <span className="text-sm font-medium text-amber-900">חיילת/סטודנטית (הנחה {selectedTreatment.studentDiscountPercent}%)</span>
+                </label>
+              </div>
+            )}
+
+            {/* Price summary */}
+            {(addonsTotal > 0 || discountAmount > 0) && (
+              <div className="bg-brand-50 rounded-xl p-4 mb-5 text-sm space-y-1">
+                <div className="flex justify-between text-brand-700">
+                  <span>סכום ביניים</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-amber-700">
+                    <span>הנחת חיילת/סטודנטית ({discountPercent}%)</span>
+                    <span>-{formatCurrency(discountAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-brand-900 pt-1 border-t border-brand-100">
+                  <span>סה״כ לתשלום</span>
+                  <span>{formatCurrency(finalPrice)}</span>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-brand-800 mb-1.5">שם מלא *</label>

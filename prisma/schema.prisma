@@ -80,21 +80,35 @@ model BusinessSettings {
 }
 
 model Treatment {
-  id              String   @id @default(cuid())
-  name            String
-  description     String?
-  defaultPrice    Float    @default(0)
-  durationMinutes Int      @default(60)
-  bufferMinutes   Int      @default(15)
-  isActive        Boolean  @default(true)
-  color           String   @default("#D4A0A0")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  name                   String
+  description            String?
+  defaultPrice           Float    @default(0)
+  durationMinutes        Int      @default(60)
+  bufferMinutes          Int      @default(15)
+  isActive               Boolean  @default(true)
+  color                  String   @default("#D4A0A0")
+  studentDiscountEnabled Boolean  @default(false)
+  studentDiscountPercent Float    @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   appointments Appointment[]
   visits       Visit[]
 
   @@map("treatments")
+}
+
+model Addon {
+  id        String   @id @default(cuid())
+  name      String
+  price     Float    @default(0)
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("addons")
 }
 
 model Client {
@@ -165,6 +179,8 @@ model Appointment {
   price           Float?
   notes           String?
   status          AppointmentStatus @default(pending)
+  addonIds        String[]          @default([])
+  isStudentDiscount Boolean         @default(false)
   cancelledReason String?
   cancelledAt     DateTime?
   confirmedAt     DateTime?
@@ -248,6 +264,9 @@ model Receipt {
   method             PaymentMethod
   serviceDescription String
   clientName         String
+  addons             Json?
+  discountAmount     Float         @default(0)
+  discountLabel      String?
   status             ReceiptStatus @default(active)
   cancelledAt        DateTime?
   cancellationReason String?
