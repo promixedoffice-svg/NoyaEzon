@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
         durationMinutes: Number.isFinite(durationMinutes) ? durationMinutes : 60,
         bufferMinutes: Number.isFinite(bufferMinutes) ? bufferMinutes : 15,
         isActive: body.isActive ?? true,
+        bookableOnline: body.bookableOnline ?? true,
         color: body.color ?? '#D4A0A0',
         studentDiscountEnabled: body.studentDiscountEnabled ?? false,
         studentDiscountPercent: Number.isFinite(studentDiscountPercent) ? studentDiscountPercent : 0,

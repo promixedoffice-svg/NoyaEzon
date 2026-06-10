@@ -29,6 +29,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data.bufferMinutes = Number.isFinite(v) ? v : 0
     }
     if (body.isActive !== undefined) data.isActive = body.isActive
+    if (body.bookableOnline !== undefined) data.bookableOnline = body.bookableOnline
     if (body.color !== undefined) data.color = body.color
     if (body.studentDiscountEnabled !== undefined) data.studentDiscountEnabled = body.studentDiscountEnabled
     if (body.studentDiscountPercent !== undefined) {

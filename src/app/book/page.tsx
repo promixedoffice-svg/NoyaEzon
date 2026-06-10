@@ -7,7 +7,7 @@ export default async function BookPage() {
   const now = new Date()
   const [settings, treatments, addons, workHours, availSettings, blockedTimes] = await Promise.all([
     prisma.businessSettings.findFirst(),
-    prisma.treatment.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
+    prisma.treatment.findMany({ where: { isActive: true, bookableOnline: true }, orderBy: { name: 'asc' } }),
     prisma.addon.findMany({ where: { isActive: true }, orderBy: [{ order: 'asc' }, { name: 'asc' }] }),
     prisma.workHours.findMany({ orderBy: { dayOfWeek: 'asc' } }),
     prisma.availabilitySettings.findFirst(),

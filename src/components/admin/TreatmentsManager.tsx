@@ -13,6 +13,7 @@ interface Treatment {
   durationMinutes: number
   bufferMinutes: number
   isActive: boolean
+  bookableOnline: boolean
   color: string
   studentDiscountEnabled: boolean
   studentDiscountPercent: number
@@ -20,7 +21,7 @@ interface Treatment {
 
 const COLORS = ['#d4605c', '#c084fc', '#f59e0b', '#10b981', '#3b82f6', '#f43f5e', '#8b5cf6', '#06b6d4']
 
-const defaultForm = { name: '', description: '', defaultPrice: 0, durationMinutes: 60, bufferMinutes: 15, isActive: true, color: COLORS[0], studentDiscountEnabled: false, studentDiscountPercent: 0 }
+const defaultForm = { name: '', description: '', defaultPrice: 0, durationMinutes: 60, bufferMinutes: 15, isActive: true, bookableOnline: true, color: COLORS[0], studentDiscountEnabled: false, studentDiscountPercent: 0 }
 
 export function TreatmentsManager({ treatments: initial }: { treatments: Treatment[] }) {
   const router = useRouter()
@@ -33,7 +34,7 @@ export function TreatmentsManager({ treatments: initial }: { treatments: Treatme
 
   function startNew() { setForm(defaultForm); setEditing(null); setShowForm(true) }
   function startEdit(t: Treatment) {
-    setForm({ name: t.name, description: t.description ?? '', defaultPrice: t.defaultPrice, durationMinutes: t.durationMinutes, bufferMinutes: t.bufferMinutes, isActive: t.isActive, color: t.color, studentDiscountEnabled: t.studentDiscountEnabled, studentDiscountPercent: t.studentDiscountPercent })
+    setForm({ name: t.name, description: t.description ?? '', defaultPrice: t.defaultPrice, durationMinutes: t.durationMinutes, bufferMinutes: t.bufferMinutes, isActive: t.isActive, bookableOnline: t.bookableOnline, color: t.color, studentDiscountEnabled: t.studentDiscountEnabled, studentDiscountPercent: t.studentDiscountPercent })
     setEditing(t); setShowForm(true)
   }
   function set(field: string, value: string | number | boolean) { setForm(prev => ({ ...prev, [field]: value })) }
@@ -53,6 +54,12 @@ export function TreatmentsManager({ treatments: initial }: { treatments: Treatme
 
   async function toggleActive(t: Treatment) {
     const res = await fetch(`/api/treatments/${t.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isActive: !t.isActive }) })
+    const data = await res.json()
+    if (res.ok) setTreatments(prev => prev.map(tr => tr.id === t.id ? data : tr))
+  }
+
+  async function toggleBookableOnline(t: Treatment) {
+    const res = await fetch(`/api/treatments/${t.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookableOnline: !t.bookableOnline }) })
     const data = await res.json()
     if (res.ok) setTreatments(prev => prev.map(tr => tr.id === t.id ? data : tr))
   }
@@ -99,6 +106,10 @@ export function TreatmentsManager({ treatments: initial }: { treatments: Treatme
               <input type="checkbox" checked={form.isActive} onChange={e => set('isActive', e.target.checked)} className="w-4 h-4 rounded accent-brand-500" />
               <span className="text-sm font-medium text-brand-800">פעיל</span>
             </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.bookableOnline} onChange={e => set('bookableOnline', e.target.checked)} className="w-4 h-4 rounded accent-brand-500" />
+              <span className="text-sm font-medium text-brand-800">להציג למטופלות בהזמנה עצמית</span>
+            </label>
 
             <div className="bg-brand-50 rounded-xl p-3 space-y-3">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -132,6 +143,7 @@ export function TreatmentsManager({ treatments: initial }: { treatments: Treatme
               <div className="flex items-center gap-2">
                 <p className="font-semibold text-brand-900">{t.name}</p>
                 {!t.isActive && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">לא פעיל</span>}
+                {!t.bookableOnline && <span className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-600">מוסתר ממטופלות</span>}
               </div>
               <div className="flex gap-4 text-xs text-muted mt-1 flex-wrap">
                 <span>{t.durationMinutes} דק׳</span>
@@ -144,6 +156,7 @@ export function TreatmentsManager({ treatments: initial }: { treatments: Treatme
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button onClick={() => toggleActive(t)} className={`text-xs px-3 py-1.5 rounded-xl font-medium transition ${t.isActive ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>{t.isActive ? 'פעיל' : 'לא פעיל'}</button>
+              <button onClick={() => toggleBookableOnline(t)} className={`text-xs px-3 py-1.5 rounded-xl font-medium transition ${t.bookableOnline ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>{t.bookableOnline ? 'גלוי למטופלות' : 'מוסתר ממטופלות'}</button>
               <button onClick={() => startEdit(t)} className="p-2 rounded-xl hover:bg-brand-50 text-muted hover:text-brand-600 transition"><Edit size={15} /></button>
               <button onClick={() => handleDelete(t)} className="p-2 rounded-xl hover:bg-red-50 text-muted hover:text-red-500 transition"><Trash2 size={15} /></button>
             </div>

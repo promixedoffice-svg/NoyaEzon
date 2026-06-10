@@ -87,6 +87,7 @@ model Treatment {
   durationMinutes        Int      @default(60)
   bufferMinutes          Int      @default(15)
   isActive               Boolean  @default(true)
+  bookableOnline         Boolean  @default(true)
   color                  String   @default("#D4A0A0")
   studentDiscountEnabled Boolean  @default(false)
   studentDiscountPercent Float    @default(0)
