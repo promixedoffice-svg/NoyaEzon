@@ -22,7 +22,7 @@ export default async function ReceiptsPage({
 
   const prefill = isNew === '1' ? { clientId, clientName, service, amount, addons: prefillAddons, discountAmount, discountLabel } : null
 
-  const [receipts, activeCount, cancelledCount, deletedCount, clients, treatments, addons, settings] = await Promise.all([
+  const [receipts, activeCount, cancelledCount, deletedCount, clients, completedWithoutReceipt, settings] = await Promise.all([
     prisma.receipt.findMany({
       where: showDeleted
         ? { deletedAt: { not: null } }
@@ -37,10 +37,32 @@ export default async function ReceiptsPage({
     prisma.receipt.count({ where: { deletedAt: null, status: 'cancelled' } }),
     prisma.receipt.count({ where: { deletedAt: { not: null } } }),
     prisma.client.findMany({ select: { id: true, fullName: true }, orderBy: { fullName: 'asc' }, where: { deletedAt: null } }),
-    prisma.treatment.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
-    prisma.addon.findMany({ where: { isActive: true }, orderBy: [{ order: 'asc' }, { name: 'asc' }] }),
+    // Completed appointments with no receipt yet - the only treatments a receipt can be issued for
+    prisma.appointment.findMany({
+      where: {
+        status: 'completed',
+        completedAt: { gte: new Date(Date.now() - 30 * 24 * 3600000) },
+        client: { receipts: { none: {} } },
+        clientId: { not: null },
+      },
+      include: {
+        client: { select: { id: true, fullName: true } },
+        treatment: { select: { name: true } },
+      },
+      orderBy: { completedAt: 'desc' },
+      take: 20,
+    }),
     prisma.businessSettings.findFirst(),
   ])
+
+  const pendingAppointments = completedWithoutReceipt.map(a => ({
+    id: a.id,
+    startAt: a.startAt,
+    price: a.price,
+    clientName: a.client?.fullName ?? 'לקוחה',
+    treatmentName: a.treatment?.name ?? 'טיפול',
+    clientId: a.clientId,
+  }))
 
   return (
     <div className="space-y-5">
@@ -48,7 +70,7 @@ export default async function ReceiptsPage({
         <h1 className="text-2xl font-bold text-brand-900">קבלות</h1>
         <div className="flex items-center gap-2">
           <ReceiptsExportActions defaultEmail={settings?.email} />
-          <ReceiptsPageClient clients={clients} treatments={treatments} addons={addons} prefill={prefill} />
+          <ReceiptsPageClient clients={clients} pendingAppointments={pendingAppointments} prefill={prefill} />
         </div>
       </div>
 

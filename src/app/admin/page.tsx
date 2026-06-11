@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Users, Calendar, AlertCircle, TrendingUp, FileText, Receipt } from 'lucide-react'
 import { PendingApprovals } from '@/components/admin/PendingApprovals'
 import { MissingReceiptsAlert } from '@/components/admin/MissingReceiptsAlert'
+import { BirthdayAlert } from '@/components/admin/BirthdayAlert'
 import { DailyGreeting } from '@/components/admin/DailyGreeting'
 
 export default async function DashboardPage() {
@@ -23,6 +24,7 @@ export default async function DashboardPage() {
     monthReceipts,
     upcomingAppointments,
     completedWithoutReceipt,
+    clientsWithBirthday,
   ] = await Promise.all([
     prisma.businessSettings.findFirst({ select: { ownerName: true } }),
     prisma.client.count({ where: { deletedAt: null } }),
@@ -60,6 +62,10 @@ export default async function DashboardPage() {
       orderBy: { completedAt: 'desc' },
       take: 10,
     }),
+    prisma.client.findMany({
+      where: { deletedAt: null, birthDate: { not: null } },
+      select: { id: true, fullName: true, birthDate: true },
+    }),
   ])
 
   const totalDebt = openDebts.reduce((s, d) => s + (d.originalAmount - d.paidAmount), 0)
@@ -75,6 +81,13 @@ export default async function DashboardPage() {
     clientId: a.clientId,
   }))
 
+  const birthdayClients = clientsWithBirthday
+    .filter(c => {
+      const b = c.birthDate!
+      return b.getMonth() === today.getMonth() && b.getDate() === today.getDate()
+    })
+    .map(c => ({ id: c.id, fullName: c.fullName }))
+
   const hebrewDate = today.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
   return (
@@ -84,6 +97,9 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold text-brand-900 mt-1">שלום 👋</h1>
         <p className="text-muted text-sm mt-0.5">{hebrewDate}</p>
       </div>
+
+      {/* Birthdays today */}
+      {birthdayClients.length > 0 && <BirthdayAlert clients={birthdayClients} />}
 
       {/* Pending approvals */}
       {pendingAppointments.length > 0 && <PendingApprovals appointments={pendingAppointments} />}
