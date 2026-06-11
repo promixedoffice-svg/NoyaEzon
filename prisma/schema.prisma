@@ -70,6 +70,7 @@ model BusinessSettings {
   email                 String?
   address               String?
   logoUrl               String?
+  bookingWelcomeMessage String?
   receiptStartingNumber Int      @default(1000)
   receiptFooterText     String?  @default("תודה על הביקור!")
   taskReminderMinutes   Int      @default(30)

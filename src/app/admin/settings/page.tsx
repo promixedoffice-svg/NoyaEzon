@@ -11,7 +11,7 @@ import { Bell, Smartphone, LayoutGrid, RefreshCw } from 'lucide-react'
 
 export default async function SettingsPage() {
   const [settings, workHours, availSettings, googleSettings] = await Promise.all([
-    prisma.businessSettings.findFirst({ select: { id: true, businessName: true, ownerName: true, businessNumber: true, phone: true, email: true, address: true, logoUrl: true, receiptStartingNumber: true, receiptFooterText: true, taskReminderMinutes: true } }),
+    prisma.businessSettings.findFirst({ select: { id: true, businessName: true, ownerName: true, businessNumber: true, phone: true, email: true, address: true, logoUrl: true, bookingWelcomeMessage: true, receiptStartingNumber: true, receiptFooterText: true, taskReminderMinutes: true } }),
     prisma.workHours.findMany({ orderBy: { dayOfWeek: 'asc' } }),
     prisma.availabilitySettings.findFirst(),
     prisma.businessSettings.findFirst({ select: { googleSheetId: true, googleCalendarId: true, googleSheetsBackupEnabled: true, googleCalendarSyncEnabled: true } }),

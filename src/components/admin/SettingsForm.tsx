@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation'
 import { Upload, Trash2 } from 'lucide-react'
 
 interface Props {
-  settings: { id: string; businessName: string; ownerName: string | null; businessNumber: string | null; phone: string | null; email: string | null; address: string | null; logoUrl?: string | null; receiptStartingNumber: number; receiptFooterText: string | null; taskReminderMinutes?: number } | null
+  settings: { id: string; businessName: string; ownerName: string | null; businessNumber: string | null; phone: string | null; email: string | null; address: string | null; logoUrl?: string | null; bookingWelcomeMessage?: string | null; receiptStartingNumber: number; receiptFooterText: string | null; taskReminderMinutes?: number } | null
 }
 
 const MAX_LOGO_BYTES = 800 * 1024
 const ACCEPTED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
+const MAX_WELCOME_MESSAGE_LENGTH = 150
 
 export function SettingsForm({ settings }: Props) {
   const router = useRouter()
@@ -24,6 +25,7 @@ export function SettingsForm({ settings }: Props) {
     email: settings?.email ?? '',
     address: settings?.address ?? '',
     logoUrl: settings?.logoUrl ?? '',
+    bookingWelcomeMessage: settings?.bookingWelcomeMessage ?? '',
     receiptStartingNumber: settings?.receiptStartingNumber ?? 1000,
     receiptFooterText: settings?.receiptFooterText ?? 'תודה על הביקור!',
     taskReminderMinutes: settings?.taskReminderMinutes ?? 30,
@@ -103,6 +105,18 @@ export function SettingsForm({ settings }: Props) {
               <p className="text-xs text-muted">PNG / JPG / WEBP / SVG · עד 800KB · מומלץ ריבועי</p>
               {logoError && <p className="text-xs text-red-500">{logoError}</p>}
             </div>
+          </div>
+          <div>
+            <label className={labelClass}>הודעת פתיחה בעמוד ההזמנה</label>
+            <textarea
+              value={form.bookingWelcomeMessage}
+              onChange={e => set('bookingWelcomeMessage', e.target.value.slice(0, MAX_WELCOME_MESSAGE_LENGTH))}
+              rows={2}
+              maxLength={MAX_WELCOME_MESSAGE_LENGTH}
+              className={inputClass}
+              placeholder="לדוגמה: ברוכות הבאות! נשמח לראותכן אצלנו 💅"
+            />
+            <p className="text-xs text-muted mt-1">תופיע מתחת ללוגו בעמוד ההזמנה למטופלות · {form.bookingWelcomeMessage.length}/{MAX_WELCOME_MESSAGE_LENGTH}</p>
           </div>
         </div>
 

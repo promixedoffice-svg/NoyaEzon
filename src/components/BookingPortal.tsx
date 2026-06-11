@@ -10,11 +10,11 @@ interface Treatment { id: string; name: string; description: string | null; defa
 interface Addon { id: string; name: string; price: number }
 interface WorkHour { dayOfWeek: number; isWorking: boolean; startTime: string; endTime: string }
 interface BlockedTime { id: string; startAt: string; endAt: string; reason: string | null; isVacation: boolean }
-interface Props { businessName: string; treatments: Treatment[]; addons?: Addon[]; workHours: WorkHour[]; minBookingHours: number; slotIntervalMinutes: number; blockedTimes?: BlockedTime[] }
+interface Props { businessName: string; logoUrl?: string | null; welcomeMessage?: string | null; treatments: Treatment[]; addons?: Addon[]; workHours: WorkHour[]; minBookingHours: number; slotIntervalMinutes: number; blockedTimes?: BlockedTime[] }
 
 type Step = 'treatment' | 'date' | 'time' | 'info' | 'success'
 
-export function BookingPortal({ businessName, treatments, addons = [], workHours, minBookingHours, blockedTimes = [] }: Props) {
+export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatments, addons = [], workHours, minBookingHours, blockedTimes = [] }: Props) {
   const [step, setStep] = useState<Step>('treatment')
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -194,9 +194,12 @@ export function BookingPortal({ businessName, treatments, addons = [], workHours
   return (
     <div className="min-h-screen py-8 px-4">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white shadow-md mb-3 text-3xl">💅</div>
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white shadow-md mb-3 text-3xl overflow-hidden">
+          {logoUrl ? <img src={logoUrl} alt={businessName} className="w-full h-full object-contain" /> : '💅'}
+        </div>
         <h1 className="text-2xl font-bold text-brand-900">{businessName}</h1>
         <p className="text-muted text-sm mt-1">הזמנת תור אונליין</p>
+        {welcomeMessage && <p className="text-brand-700 text-sm mt-2 max-w-md mx-auto">{welcomeMessage}</p>}
       </div>
 
       <div className="flex justify-center gap-2 mb-8">

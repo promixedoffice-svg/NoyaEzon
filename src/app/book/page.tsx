@@ -30,6 +30,8 @@ export default async function BookPage() {
     <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-brand-100" dir="rtl">
       <BookingPortal
         businessName={settings?.businessName ?? 'הסטודיו'}
+        logoUrl={settings?.logoUrl ?? null}
+        welcomeMessage={settings?.bookingWelcomeMessage ?? null}
         treatments={treatments}
         addons={addons}
         workHours={workHours}
