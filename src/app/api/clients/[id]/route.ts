@@ -18,6 +18,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(body.preferences !== undefined ? { preferences: body.preferences || null } : {}),
       ...(body.sensitivities !== undefined ? { sensitivities: body.sensitivities || null } : {}),
       ...(body.status !== undefined ? { status: body.status } : {}),
+      ...(body.birthDate !== undefined ? { birthDate: body.birthDate ? new Date(body.birthDate) : null } : {}),
+      ...(body.customAnswers !== undefined ? { customAnswers: body.customAnswers } : {}),
       // Soft delete
       ...(body.deletedAt !== undefined ? { deletedAt: body.deletedAt ? new Date(body.deletedAt) : null } : {}),
     },

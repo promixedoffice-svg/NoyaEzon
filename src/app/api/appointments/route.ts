@@ -50,6 +50,8 @@ export async function POST(req: NextRequest) {
           phone: body.guestPhone || null,
           email: body.guestEmail || null,
           status: 'new',
+          birthDate: body.birthDate ? new Date(body.birthDate) : null,
+          customAnswers: body.customAnswers ?? undefined,
         },
       })
       clientId = newClient.id

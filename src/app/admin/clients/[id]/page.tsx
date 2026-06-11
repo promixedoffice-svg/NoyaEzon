@@ -25,6 +25,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
   if (!client) notFound()
 
+  const customAnswers = (client.customAnswers as Record<string, string | string[]> | null) ?? null
+  const customQuestions = customAnswers ? await prisma.customQuestion.findMany({ where: { id: { in: Object.keys(customAnswers) } } }) : []
+
   const totalRevenue = client.payments.reduce((s, p) => s + p.amount, 0)
   const totalReceiptRevenue = client.receipts.filter(r => r.status === 'active' && !r.deletedAt).reduce((s, r) => s + r.amount, 0)
   const totalDebt = client.debts.reduce((s, d) => s + (d.originalAmount - d.paidAmount), 0)
@@ -69,6 +72,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               {client.phone && <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 hover:text-brand-600 transition"><Phone size={13} />{client.phone}</a>}
               {client.email && <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 hover:text-brand-600 transition"><Mail size={13} />{client.email}</a>}
               {client.city && <span className="flex items-center gap-1.5"><MapPin size={13} />{client.city}</span>}
+              {client.birthDate && <span className="flex items-center gap-1.5">🎂 {formatDate(client.birthDate)}</span>}
             </div>
 
             {/* Actions row */}
@@ -108,6 +112,25 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           {client.notes && <NoteCard title="הערות" text={client.notes} />}
           {client.preferences && <NoteCard title="העדפות" text={client.preferences} />}
           {client.sensitivities && <NoteCard title="רגישויות" text={client.sensitivities} highlight />}
+        </div>
+      )}
+
+      {/* Custom intake answers */}
+      {customAnswers && customQuestions.length > 0 && (
+        <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-4">
+          <h3 className="text-xs font-semibold uppercase mb-2 text-muted">פרטים נוספים</h3>
+          <div className="grid sm:grid-cols-2 gap-3 text-sm">
+            {customQuestions.map(q => {
+              const answer = customAnswers[q.id]
+              if (!answer || (Array.isArray(answer) && answer.length === 0)) return null
+              return (
+                <div key={q.id}>
+                  <p className="text-xs text-muted">{q.label}</p>
+                  <p className="text-brand-900 font-medium">{Array.isArray(answer) ? answer.join(', ') : answer}</p>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

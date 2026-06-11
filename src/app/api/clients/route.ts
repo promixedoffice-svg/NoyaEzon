@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
       preferences: body.preferences || null,
       sensitivities: body.sensitivities || null,
       status: body.status ?? 'new',
+      birthDate: body.birthDate ? new Date(body.birthDate) : null,
+      customAnswers: body.customAnswers ?? undefined,
     },
   })
   return NextResponse.json(client)

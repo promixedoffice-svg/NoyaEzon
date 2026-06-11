@@ -10,11 +10,12 @@ interface Treatment { id: string; name: string; description: string | null; defa
 interface Addon { id: string; name: string; price: number }
 interface WorkHour { dayOfWeek: number; isWorking: boolean; startTime: string; endTime: string }
 interface BlockedTime { id: string; startAt: string; endAt: string; reason: string | null; isVacation: boolean }
-interface Props { businessName: string; logoUrl?: string | null; welcomeMessage?: string | null; treatments: Treatment[]; addons?: Addon[]; workHours: WorkHour[]; minBookingHours: number; slotIntervalMinutes: number; blockedTimes?: BlockedTime[] }
+interface CustomQuestion { id: string; label: string; type: 'single' | 'multi'; options: string[] }
+interface Props { businessName: string; logoUrl?: string | null; welcomeMessage?: string | null; treatments: Treatment[]; addons?: Addon[]; workHours: WorkHour[]; minBookingHours: number; slotIntervalMinutes: number; blockedTimes?: BlockedTime[]; customQuestions?: CustomQuestion[] }
 
 type Step = 'treatment' | 'date' | 'time' | 'info' | 'success'
 
-export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatments, addons = [], workHours, minBookingHours, blockedTimes = [] }: Props) {
+export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatments, addons = [], workHours, minBookingHours, blockedTimes = [], customQuestions = [] }: Props) {
   const [step, setStep] = useState<Step>('treatment')
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -28,6 +29,8 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
   const [error, setError] = useState('')
   const [recognized, setRecognized] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [birthDate, setBirthDate] = useState('')
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string | string[]>>({})
   const [calendarOffset, setCalendarOffset] = useState(0)
   const [bookedAppointment, setBookedAppointment] = useState<{ id: string; startAt: string; endAt: string } | null>(null)
 
@@ -36,6 +39,18 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
 
   function toggleAddon(id: string) {
     setSelectedAddonIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+  }
+
+  function setSingleAnswer(questionId: string, value: string) {
+    setCustomAnswers(prev => ({ ...prev, [questionId]: value }))
+  }
+
+  function toggleMultiAnswer(questionId: string, value: string) {
+    setCustomAnswers(prev => {
+      const current = Array.isArray(prev[questionId]) ? prev[questionId] as string[] : []
+      const next = current.includes(value) ? current.filter(v => v !== value) : [...current, value]
+      return { ...prev, [questionId]: next }
+    })
   }
 
   const addonsTotal = useMemo(
@@ -111,6 +126,8 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
         isStudentDiscount: discountPercent > 0,
         status: 'pending',
         termsAccepted: true,
+        birthDate: !recognized && birthDate ? birthDate : null,
+        customAnswers: !recognized ? customAnswers : undefined,
       }),
     })
 
@@ -427,6 +444,36 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
                   className="w-full px-4 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition resize-none"
                   placeholder="בקשות מיוחדות, הערות לטיפול..." />
               </div>
+
+              {/* First-time client extras */}
+              {!recognized && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-brand-800 mb-1.5">תאריך לידה (אופציונלי)</label>
+                    <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition" dir="ltr" />
+                    <p className="text-xs text-muted mt-1">שנדע להגיד מזל טוב ביום הולדתך 🎂</p>
+                  </div>
+
+                  {customQuestions.map(q => (
+                    <div key={q.id}>
+                      <label className="block text-sm font-medium text-brand-800 mb-1.5">{q.label}</label>
+                      <div className="flex flex-wrap gap-2">
+                        {q.options.map(opt => (
+                          <label key={opt} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-brand-200 bg-brand-50 text-sm cursor-pointer">
+                            {q.type === 'single' ? (
+                              <input type="radio" name={`cq-${q.id}`} checked={customAnswers[q.id] === opt} onChange={() => setSingleAnswer(q.id, opt)} className="accent-brand-500" />
+                            ) : (
+                              <input type="checkbox" checked={Array.isArray(customAnswers[q.id]) && (customAnswers[q.id] as string[]).includes(opt)} onChange={() => toggleMultiAnswer(q.id, opt)} className="accent-brand-500" />
+                            )}
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
 
             {/* Disclaimer */}

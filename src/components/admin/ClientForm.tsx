@@ -14,13 +14,23 @@ interface ClientData {
   preferences?: string | null
   sensitivities?: string | null
   status: string
+  birthDate?: string | Date | null
+  customAnswers?: Record<string, string | string[]> | null
+}
+
+interface CustomQuestion {
+  id: string
+  label: string
+  type: 'single' | 'multi'
+  options: string[]
 }
 
 interface Props {
   client?: ClientData
+  customQuestions?: CustomQuestion[]
 }
 
-export function ClientForm({ client }: Props) {
+export function ClientForm({ client, customQuestions = [] }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -35,10 +45,24 @@ export function ClientForm({ client }: Props) {
     preferences: client?.preferences ?? '',
     sensitivities: client?.sensitivities ?? '',
     status: client?.status ?? 'new',
+    birthDate: client?.birthDate ? new Date(client.birthDate).toISOString().split('T')[0] : '',
   })
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string | string[]>>(client?.customAnswers ?? {})
 
   function set(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  function setSingleAnswer(questionId: string, value: string) {
+    setCustomAnswers(prev => ({ ...prev, [questionId]: value }))
+  }
+
+  function toggleMultiAnswer(questionId: string, value: string) {
+    setCustomAnswers(prev => {
+      const current = Array.isArray(prev[questionId]) ? prev[questionId] as string[] : []
+      const next = current.includes(value) ? current.filter(v => v !== value) : [...current, value]
+      return { ...prev, [questionId]: next }
+    })
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -52,7 +76,7 @@ export function ClientForm({ client }: Props) {
     const res = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, birthDate: form.birthDate || null, customAnswers }),
     })
 
     const data = await res.json()
@@ -99,6 +123,11 @@ export function ClientForm({ client }: Props) {
             <option value="debt">חייבת</option>
           </select>
         </div>
+        <div>
+          <label className={labelClass}>תאריך לידה</label>
+          <input type="date" value={form.birthDate} onChange={e => set('birthDate', e.target.value)} className={inputClass} dir="ltr" />
+          <p className="text-xs text-muted mt-1">לא חובה - שנדע להגיד מזל טוב 🎂</p>
+        </div>
       </div>
 
       <div>
@@ -113,6 +142,35 @@ export function ClientForm({ client }: Props) {
         <label className={labelClass}>רגישויות ואלרגיות</label>
         <textarea value={form.sensitivities} onChange={e => set('sensitivities', e.target.value)} rows={2} className={inputClass} placeholder="אלרגיות, רגישויות לחומרים..." />
       </div>
+
+      {customQuestions.length > 0 && (
+        <div className="space-y-4 pt-2 border-t border-brand-50">
+          {customQuestions.map(q => (
+            <div key={q.id}>
+              <label className={labelClass}>{q.label}</label>
+              {q.type === 'single' ? (
+                <div className="flex flex-wrap gap-2">
+                  {q.options.map(opt => (
+                    <label key={opt} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-brand-200 bg-brand-50 text-sm cursor-pointer">
+                      <input type="radio" name={`cq-${q.id}`} checked={customAnswers[q.id] === opt} onChange={() => setSingleAnswer(q.id, opt)} className="accent-brand-500" />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {q.options.map(opt => (
+                    <label key={opt} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-brand-200 bg-brand-50 text-sm cursor-pointer">
+                      <input type="checkbox" checked={Array.isArray(customAnswers[q.id]) && (customAnswers[q.id] as string[]).includes(opt)} onChange={() => toggleMultiAnswer(q.id, opt)} className="accent-brand-500" />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {error && <div className="bg-red-50 text-red-700 text-sm rounded-xl px-4 py-3 border border-red-100">{error}</div>}
 

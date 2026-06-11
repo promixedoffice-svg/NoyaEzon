@@ -48,6 +48,11 @@ enum ReceiptStatus {
   cancelled
 }
 
+enum CustomQuestionType {
+  single
+  multi
+}
+
 enum ExpenseCategory {
   materials
   equipment
@@ -128,6 +133,8 @@ model Client {
   preferences   String?
   sensitivities String?
   status        ClientStatus @default(new)
+  birthDate     DateTime?
+  customAnswers Json?
   cardOpenedAt  DateTime     @default(now())
   deletedAt     DateTime?
   createdAt     DateTime     @default(now())
@@ -172,6 +179,19 @@ model AvailabilitySettings {
   clientSlotIntervalMinutes Int    @default(15)
 
   @@map("availability_settings")
+}
+
+model CustomQuestion {
+  id        String             @id @default(cuid())
+  label     String
+  type      CustomQuestionType @default(single)
+  options   String[]           @default([])
+  order     Int                @default(0)
+  isActive  Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@map("custom_questions")
 }
 
 model Appointment {
