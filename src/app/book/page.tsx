@@ -1,7 +1,16 @@
+import { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { BookingPortal } from '@/components/BookingPortal'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await prisma.businessSettings.findFirst({ select: { businessName: true, logoUrl: true } })
+  return {
+    title: settings?.businessName ? `הזמנת תור | ${settings.businessName}` : 'הזמנת תור',
+    icons: settings?.logoUrl ? { icon: '/api/logo' } : undefined,
+  }
+}
 
 export default async function BookPage() {
   const now = new Date()

@@ -192,6 +192,7 @@ model Appointment {
   cancelledAt     DateTime?
   confirmedAt     DateTime?
   completedAt     DateTime?
+  termsAcceptedAt DateTime?
   googleEventId   String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt

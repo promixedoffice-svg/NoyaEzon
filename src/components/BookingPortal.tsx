@@ -27,6 +27,7 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [error, setError] = useState('')
   const [recognized, setRecognized] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [calendarOffset, setCalendarOffset] = useState(0)
   const [bookedAppointment, setBookedAppointment] = useState<{ id: string; startAt: string; endAt: string } | null>(null)
 
@@ -88,7 +89,7 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
   }, [selectedDate, selectedTreatment])
 
   async function handleSubmit() {
-    if (!selectedTreatment || !selectedDate || !selectedTime || !info.name || !info.phone) return
+    if (!selectedTreatment || !selectedDate || !selectedTime || !info.name || !info.phone || !termsAccepted) return
     setLoading(true); setError('')
     const [h, m] = selectedTime.split(':').map(Number)
     const startAt = new Date(selectedDate); startAt.setHours(h, m, 0, 0)
@@ -109,6 +110,7 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
         addonIds: selectedAddonIds,
         isStudentDiscount: discountPercent > 0,
         status: 'pending',
+        termsAccepted: true,
       }),
     })
 
@@ -406,7 +408,7 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
               {recognized && (
                 <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 text-xs text-green-800">
                   <Check size={13} className="shrink-0" />
-                  <span>זיהינו אותך! מילאנו את הפרטים שלך - ניתן לערוך אותם</span>
+                  <span>תודה שחזרת! זיהינו אותך ומילאנו עבורך את הפרטים - ניתן לערוך אותם</span>
                 </div>
               )}
               <div>
@@ -433,9 +435,19 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
               <p>בקשת התור <strong>אינה בתוקף</strong> עד לאישור המטפלת. תקבלי הודעה לאחר האישור.</p>
             </div>
 
+            {/* Terms acceptance */}
+            <label className="flex items-start gap-2 cursor-pointer text-xs text-brand-800">
+              <input type="checkbox" required checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} className="w-4 h-4 rounded accent-brand-500 mt-0.5 shrink-0" />
+              <span>
+                קראתי ואני מסכימ/ה ל
+                <a href="/legal" target="_blank" rel="noopener noreferrer" className="text-brand-600 underline hover:text-brand-700">תנאי השימוש ומדיניות הפרטיות</a>
+                {' '}של {businessName}
+              </span>
+            </label>
+
             {error && <div className="bg-red-50 text-red-700 text-sm rounded-xl px-4 py-3 border border-red-100">{error}</div>}
             <div className="flex gap-3">
-              <button onClick={handleSubmit} disabled={loading || !info.name || !info.phone}
+              <button onClick={handleSubmit} disabled={loading || !info.name || !info.phone || !termsAccepted}
                 className="flex-1 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold rounded-xl transition">
                 {loading ? 'שולחת...' : 'שליחת בקשת תור'}
               </button>

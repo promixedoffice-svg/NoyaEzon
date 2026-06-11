@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
       status: body.status ?? 'pending',
       addonIds: Array.isArray(body.addonIds) ? body.addonIds : [],
       isStudentDiscount: body.isStudentDiscount ?? false,
+      termsAcceptedAt: body.termsAccepted ? new Date() : null,
     },
     include: { client: { select: { fullName: true } }, treatment: { select: { name: true } } },
   })
