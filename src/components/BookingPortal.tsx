@@ -26,6 +26,7 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [error, setError] = useState('')
+  const [recognized, setRecognized] = useState(false)
   const [calendarOffset, setCalendarOffset] = useState(0)
   const [bookedAppointment, setBookedAppointment] = useState<{ id: string; startAt: string; endAt: string } | null>(null)
 
@@ -56,6 +57,24 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
     const d1 = new Date(date); d1.setHours(23, 59, 0, 0)
     return blockedTimes.find(bt => new Date(bt.startAt) <= d0 && new Date(bt.endAt) >= d1) ?? null
   }
+
+  // Recognize returning client by phone and prefill their details
+  useEffect(() => {
+    const phone = info.phone.replace(/[-\s]/g, '')
+    if (!/^0\d{8,9}$/.test(phone)) { setRecognized(false); return }
+    const timer = setTimeout(() => {
+      fetch(`/api/clients/lookup?phone=${encodeURIComponent(phone)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.fullName) {
+            setInfo(p => ({ ...p, name: p.name || data.fullName, email: p.email || data.email || '' }))
+            setRecognized(true)
+          }
+        })
+        .catch(() => {})
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [info.phone])
 
   // Fetch real available slots when date+treatment selected
   useEffect(() => {
@@ -380,14 +399,20 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-brand-800 mb-1.5">שם מלא *</label>
-                <input required value={info.name} onChange={e => setInfo(p => ({ ...p, name: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="שם פרטי + שם משפחה" />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-brand-800 mb-1.5">טלפון *</label>
                 <input required type="tel" value={info.phone} onChange={e => setInfo(p => ({ ...p, phone: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="050-0000000" dir="ltr" />
+              </div>
+              {recognized && (
+                <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-3 py-2 text-xs text-green-800">
+                  <Check size={13} className="shrink-0" />
+                  <span>זיהינו אותך! מילאנו את הפרטים שלך - ניתן לערוך אותם</span>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-brand-800 mb-1.5">שם מלא *</label>
+                <input required value={info.name} onChange={e => setInfo(p => ({ ...p, name: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-brand-200 bg-brand-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 transition" placeholder="שם פרטי + שם משפחה" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-brand-800 mb-1.5">אימייל (לאישור + הוספה ליומן)</label>
