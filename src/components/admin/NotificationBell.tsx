@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Bell } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 export function NotificationBell() {
   const [count, setCount] = useState(0)
   const [pulse, setPulse] = useState(false)
   const prevCount = useRef(0)
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     async function fetchCount() {
@@ -48,9 +49,27 @@ export function NotificationBell() {
 
   if (count === 0) return null
 
+  function scrollToPending(attempts = 0) {
+    const el = document.getElementById('pending-approvals')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else if (attempts < 10) {
+      setTimeout(() => scrollToPending(attempts + 1), 200)
+    }
+  }
+
+  function handleClick() {
+    if (pathname === '/admin') {
+      router.refresh()
+    } else {
+      router.push('/admin')
+    }
+    scrollToPending()
+  }
+
   return (
     <button
-      onClick={() => router.push('/admin')}
+      onClick={handleClick}
       className={`relative p-2 rounded-xl hover:bg-brand-50 transition ${pulse ? 'animate-bounce' : ''}`}
       title={`${count} תורים ממתינים`}
     >

@@ -102,7 +102,11 @@ export default async function DashboardPage() {
       {birthdayClients.length > 0 && <BirthdayAlert clients={birthdayClients} />}
 
       {/* Pending approvals */}
-      {pendingAppointments.length > 0 && <PendingApprovals appointments={pendingAppointments} />}
+      {pendingAppointments.length > 0 && (
+        <div id="pending-approvals">
+          <PendingApprovals appointments={pendingAppointments} />
+        </div>
+      )}
 
       {/* Missing receipts alert */}
       {missingReceipts.length > 0 && <MissingReceiptsAlert appointments={missingReceipts} />}
