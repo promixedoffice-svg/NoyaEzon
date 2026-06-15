@@ -245,7 +245,7 @@ export function BookingPortal({ businessName, logoUrl, welcomeMessage, treatment
             onClick={() => setShowGallery(true)}
             className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-xl border border-brand-200 bg-white text-brand-700 text-sm font-medium hover:bg-brand-50 transition shadow-sm"
           >
-            <Images size={15} /> גלריית דוגמאות
+            <Images size={15} /> לחצי לראות דוגמאות חדשות
           </button>
         )}
       </div>
