@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, ChevronRight, ChevronLeft } from 'lucide-react'
 
-interface GalleryImg { id: string; order: number }
+interface GalleryImg { id: string; order: number; caption: string | null }
+const MAX_CAPTION_LENGTH = 200
 
 const MAX_IMAGES = 9
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
@@ -37,6 +38,7 @@ export function GallerySettings({ images }: { images: GalleryImg[] }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [captions, setCaptions] = useState<Record<string, string>>({})
 
   const sorted = [...images].sort((a, b) => a.order - b.order)
   const slots = Array.from({ length: MAX_IMAGES }, (_, i) => sorted[i] ?? null)
@@ -93,51 +95,75 @@ export function GallerySettings({ images }: { images: GalleryImg[] }) {
     router.refresh()
   }
 
+  async function handleCaptionBlur(img: GalleryImg) {
+    const caption = captions[img.id] ?? img.caption ?? ''
+    if (caption === (img.caption ?? '')) return
+    await fetch(`/api/gallery/${img.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caption }),
+    })
+    router.refresh()
+  }
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {slots.map((img, i) => (
-          <div key={img?.id ?? `empty-${i}`} className="relative aspect-square rounded-xl overflow-hidden border border-brand-200 bg-brand-50">
-            {img ? (
-              <>
-                <img src={`/api/gallery/${img.id}`} alt="" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => handleDelete(img.id)}
-                  disabled={loading}
-                  className="absolute top-1 left-1 p-1.5 rounded-lg bg-black/50 text-white hover:bg-red-500/80 transition"
-                >
-                  <Trash2 size={13} />
-                </button>
-                <div className="absolute bottom-1 inset-x-1 flex justify-between">
+          <div key={img?.id ?? `empty-${i}`} className="space-y-1">
+            <div className="relative aspect-square rounded-xl overflow-hidden border border-brand-200 bg-brand-50">
+              {img ? (
+                <>
+                  <img src={`/api/gallery/${img.id}`} alt="" className="w-full h-full object-cover" />
                   <button
                     type="button"
-                    onClick={() => handleMove(img.id, 'down')}
-                    disabled={loading || i === sorted.length - 1}
-                    className="p-1.5 rounded-lg bg-black/50 text-white disabled:opacity-30 hover:bg-black/70 transition"
+                    onClick={() => handleDelete(img.id)}
+                    disabled={loading}
+                    className="absolute top-1 left-1 p-1.5 rounded-lg bg-black/50 text-white hover:bg-red-500/80 transition"
                   >
-                    <ChevronLeft size={13} />
+                    <Trash2 size={13} />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleMove(img.id, 'up')}
-                    disabled={loading || i === 0}
-                    className="p-1.5 rounded-lg bg-black/50 text-white disabled:opacity-30 hover:bg-black/70 transition"
-                  >
-                    <ChevronRight size={13} />
-                  </button>
-                </div>
-              </>
-            ) : (
-              <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer text-brand-400 hover:bg-brand-100 transition">
-                <Plus size={20} />
-                <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleFileChange} className="hidden" disabled={loading || sorted.length >= MAX_IMAGES} />
-              </label>
+                  <div className="absolute bottom-1 inset-x-1 flex justify-between">
+                    <button
+                      type="button"
+                      onClick={() => handleMove(img.id, 'down')}
+                      disabled={loading || i === sorted.length - 1}
+                      className="p-1.5 rounded-lg bg-black/50 text-white disabled:opacity-30 hover:bg-black/70 transition"
+                    >
+                      <ChevronLeft size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleMove(img.id, 'up')}
+                      disabled={loading || i === 0}
+                      className="p-1.5 rounded-lg bg-black/50 text-white disabled:opacity-30 hover:bg-black/70 transition"
+                    >
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer text-brand-400 hover:bg-brand-100 transition">
+                  <Plus size={20} />
+                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleFileChange} className="hidden" disabled={loading || sorted.length >= MAX_IMAGES} />
+                </label>
+              )}
+            </div>
+            {img && (
+              <input
+                type="text"
+                value={captions[img.id] ?? img.caption ?? ''}
+                onChange={e => setCaptions(prev => ({ ...prev, [img.id]: e.target.value }))}
+                onBlur={() => handleCaptionBlur(img)}
+                maxLength={MAX_CAPTION_LENGTH}
+                placeholder="תיאור לתמונה..."
+                className="w-full text-xs px-2 py-1 rounded-lg border border-brand-200 bg-white focus:outline-none focus:ring-1 focus:ring-brand-300"
+              />
             )}
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted">JPG / PNG / WEBP · עד {MAX_IMAGES} תמונות · התמונות יחתכו אוטומטית לריבוע</p>
+      <p className="text-xs text-muted">JPG / PNG / WEBP · עד {MAX_IMAGES} תמונות · התמונות יחתכו אוטומטית לריבוע · ניתן להוסיף תיאור שיוצג מתחת לתמונה בגלריה</p>
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   )

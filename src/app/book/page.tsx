@@ -22,7 +22,7 @@ export default async function BookPage() {
     prisma.availabilitySettings.findFirst(),
     prisma.blockedTime.findMany({ where: { endAt: { gte: now } }, orderBy: { startAt: 'asc' } }),
     prisma.customQuestion.findMany({ where: { isActive: true }, orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] }),
-    prisma.galleryImage.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
+    prisma.galleryImage.findMany({ orderBy: { order: 'asc' }, select: { id: true, caption: true } }),
   ])
 
   if (!treatments.length) {
@@ -50,7 +50,7 @@ export default async function BookPage() {
         slotIntervalMinutes={availSettings?.clientSlotIntervalMinutes ?? availSettings?.slotIntervalMinutes ?? 15}
         blockedTimes={blockedTimes.map(b => ({ id: b.id, startAt: b.startAt.toISOString(), endAt: b.endAt.toISOString(), reason: b.reason, isVacation: b.isVacation }))}
         customQuestions={customQuestions.map(q => ({ id: q.id, label: q.label, type: q.type, options: q.options }))}
-        galleryImageIds={galleryImages.map(g => g.id)}
+        galleryImages={galleryImages.map(g => ({ id: g.id, caption: g.caption }))}
       />
     </div>
   )

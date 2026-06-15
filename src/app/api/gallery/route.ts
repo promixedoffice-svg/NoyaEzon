@@ -9,7 +9,7 @@ export async function GET() {
   if (!await requireAuth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const images = await prisma.galleryImage.findMany({
     orderBy: { order: 'asc' },
-    select: { id: true, order: true },
+    select: { id: true, order: true, caption: true },
   })
   return NextResponse.json(images)
 }

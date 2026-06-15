@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   const images = await prisma.galleryImage.findMany({
     orderBy: { order: 'asc' },
-    select: { id: true, order: true },
+    select: { id: true, order: true, caption: true },
   })
   return NextResponse.json(images)
 }

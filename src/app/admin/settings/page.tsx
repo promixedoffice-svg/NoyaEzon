@@ -18,7 +18,7 @@ export default async function SettingsPage() {
     prisma.availabilitySettings.findFirst(),
     prisma.businessSettings.findFirst({ select: { googleSheetId: true, googleCalendarId: true, googleSheetsBackupEnabled: true, googleCalendarSyncEnabled: true } }),
     prisma.customQuestion.findMany({ orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] }),
-    prisma.galleryImage.findMany({ orderBy: { order: 'asc' }, select: { id: true, order: true } }),
+    prisma.galleryImage.findMany({ orderBy: { order: 'asc' }, select: { id: true, order: true, caption: true } }),
   ])
 
   return (

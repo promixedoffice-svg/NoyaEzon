@@ -184,6 +184,7 @@ model AvailabilitySettings {
 model GalleryImage {
   id        String   @id @default(cuid())
   dataUrl   String   // data:image/jpeg;base64,... (חתוך לריבוע מראש בצד הלקוח)
+  caption   String?
   order     Int      @default(0)
   createdAt DateTime @default(now())
 

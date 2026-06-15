@@ -14,11 +14,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 }
 
+const MAX_CAPTION_LENGTH = 200
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!await requireAuth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
   try {
     const body = await req.json()
+
+    if (typeof body.caption === 'string' || body.caption === null) {
+      const caption = typeof body.caption === 'string' ? body.caption.trim().slice(0, MAX_CAPTION_LENGTH) : null
+      const image = await prisma.galleryImage.update({
+        where: { id },
+        data: { caption: caption || null },
+        select: { id: true, caption: true },
+      })
+      return NextResponse.json(image)
+    }
+
     const direction = body.direction
     if (direction !== 'up' && direction !== 'down') {
       return NextResponse.json({ error: 'כיוון לא תקין' }, { status: 400 })
@@ -41,7 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     ])
     return NextResponse.json({ ok: true })
   } catch {
-    return NextResponse.json({ error: 'שגיאה בסידור התמונות' }, { status: 500 })
+    return NextResponse.json({ error: 'שגיאה בעדכון התמונה' }, { status: 500 })
   }
 }
 
