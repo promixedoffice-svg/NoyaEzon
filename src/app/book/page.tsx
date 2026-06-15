@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function BookPage() {
   const now = new Date()
-  const [settings, treatments, addons, workHours, availSettings, blockedTimes, customQuestions] = await Promise.all([
+  const [settings, treatments, addons, workHours, availSettings, blockedTimes, customQuestions, galleryImages] = await Promise.all([
     prisma.businessSettings.findFirst(),
     prisma.treatment.findMany({ where: { isActive: true, bookableOnline: true }, orderBy: { name: 'asc' } }),
     prisma.addon.findMany({ where: { isActive: true }, orderBy: [{ order: 'asc' }, { name: 'asc' }] }),
@@ -22,6 +22,7 @@ export default async function BookPage() {
     prisma.availabilitySettings.findFirst(),
     prisma.blockedTime.findMany({ where: { endAt: { gte: now } }, orderBy: { startAt: 'asc' } }),
     prisma.customQuestion.findMany({ where: { isActive: true }, orderBy: [{ order: 'asc' }, { createdAt: 'asc' }] }),
+    prisma.galleryImage.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
   ])
 
   if (!treatments.length) {
@@ -49,6 +50,7 @@ export default async function BookPage() {
         slotIntervalMinutes={availSettings?.clientSlotIntervalMinutes ?? availSettings?.slotIntervalMinutes ?? 15}
         blockedTimes={blockedTimes.map(b => ({ id: b.id, startAt: b.startAt.toISOString(), endAt: b.endAt.toISOString(), reason: b.reason, isVacation: b.isVacation }))}
         customQuestions={customQuestions.map(q => ({ id: q.id, label: q.label, type: q.type, options: q.options }))}
+        galleryImageIds={galleryImages.map(g => g.id)}
       />
     </div>
   )
